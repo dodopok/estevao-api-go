@@ -620,10 +620,36 @@ func (b *Base) RiteChoice(key string, rites []string) string {
 		}
 		return s
 	}
-	if l, ok := p.([]any); ok && len(l) == 0 {
-		return rites[0]
+	switch x := p.(type) {
+	case []any:
+		if len(x) == 0 {
+			return rites[0]
+		}
+	case *rb.Map:
+		if x.Len() == 0 {
+			return rites[0]
+		}
+	case bool, int, float64:
+		// pref.empty? on a value without #empty?.
+		panic(&rb.RubyError{Class: "NoMethodError", Message: "undefined method `empty?' for " + rb.Inspect(p) + ":" + rubyClassName(p)})
 	}
 	return rb.ToS(p)
+}
+
+// rubyClassName names the Ruby class of a scalar preference value.
+func rubyClassName(v any) string {
+	switch x := v.(type) {
+	case bool:
+		if x {
+			return "TrueClass"
+		}
+		return "FalseClass"
+	case int:
+		return "Integer"
+	case float64:
+		return "Float"
+	}
+	return "Object"
 }
 
 // Season helpers --------------------------------------------------------------------
