@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -80,6 +81,16 @@ func Save(ctx context.Context, q db.Querier, before, u *User) (bool, error) {
 	if !strEq(before.CountryCode, u.CountryCode) {
 		cols["country_code"] = u.CountryCode
 	}
+	if !strEq(before.RevenueCatUserID, u.RevenueCatUserID) {
+		cols["revenue_cat_user_id"] = u.RevenueCatUserID
+	}
+	if !timeEqUsec(before.PremiumExpiresAt, u.PremiumExpiresAt) {
+		var v any
+		if u.PremiumExpiresAt != nil {
+			v = u.PremiumExpiresAt.UTC() // a timestamp column stores UTC wall time
+		}
+		cols["premium_expires_at"] = v
+	}
 	if !Equal(before.Preferences, u.Preferences) {
 		if err := SyncBibleVersionLanguage(ctx, before.Preferences, u.Preferences); err != nil {
 			return false, err
@@ -104,4 +115,13 @@ func (u *User) Clone() *User {
 		c.Preferences = u.Preferences.Dup()
 	}
 	return &c
+}
+
+// timeEqUsec compares two datetime attributes at the column's microsecond
+// precision, as Active Record's dirty tracking does.
+func timeEqUsec(a, b *time.Time) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	return a.Truncate(time.Microsecond).Equal(b.Truncate(time.Microsecond))
 }

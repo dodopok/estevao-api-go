@@ -44,3 +44,24 @@ if (fake_google = ENV["ORACLE_FAKE_GOOGLE_URL"].presence)
     end
   end)
 end
+
+# Outbound calls made with http.rb (RevenueCat, ...): send the production
+# base URLs to the fakes named by the same variables the Go server reads.
+ORACLE_HTTP_REWRITES = {
+  "https://api.revenuecat.com/v1" => ENV["REVENUECAT_API_URL"].presence
+}.compact.freeze
+unless ORACLE_HTTP_REWRITES.empty?
+  require "http"
+  HTTP::Client.prepend(Module.new do
+    define_method(:request) do |verb, uri, opts = {}|
+      target = uri.to_s
+      ORACLE_HTTP_REWRITES.each do |from, to|
+        if target.start_with?(from)
+          target = to + target.delete_prefix(from)
+          break
+        end
+      end
+      super(verb, target, opts)
+    end
+  end)
+end

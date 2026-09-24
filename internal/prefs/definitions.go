@@ -16,6 +16,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/web"
+	"github.com/jackc/pgx/v5"
 )
 
 // Definition is a preference_definitions row.
@@ -296,6 +297,38 @@ func For(ctx context.Context, pb *store.PrayerBook) (*DefinitionSet, error) {
 	if err != nil {
 		return nil, err
 	}
+	defs, err := scanDefinitions(rows)
+	if err != nil {
+		return nil, err
+	}
+	set := newDefinitionSet(defs)
+	setMu.Lock()
+	setCache[pb.Code] = setEntry{pb.UpdatedAt, set}
+	setMu.Unlock()
+	return set, nil
+}
+
+// ForCategories loads definitions the way the preload of
+// PreferenceCategory#preference_definitions does. Ties on position come back
+// in whatever order PostgreSQL's plan for that exact query gives, so the
+// query mirrors the one Active Record sends.
+func ForCategories(ctx context.Context, ids []int64) ([]*Definition, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	rows, err := db.Q().Query(ctx, `SELECT pd.id, pd.created_at, pd.default_value, pd.depends_on, pd.description,
+		pd.key, pd.name, pd.options, pd.position, pd.pref_type, pd.preference_category_id, pd.required,
+		pd.simple_value, pd.updated_at, pd.validation_rules
+		FROM preference_definitions pd
+		WHERE pd.preference_category_id = ANY($1)
+		ORDER BY pd.position ASC`, ids)
+	if err != nil {
+		return nil, err
+	}
+	return scanDefinitions(rows)
+}
+
+func scanDefinitions(rows pgx.Rows) ([]*Definition, error) {
 	defer rows.Close()
 	var defs []*Definition
 	for rows.Next() {
@@ -311,14 +344,7 @@ func For(ctx context.Context, pb *store.PrayerBook) (*DefinitionSet, error) {
 		d.ValidationRules = decodeJSON(rules)
 		defs = append(defs, &d)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	set := newDefinitionSet(defs)
-	setMu.Lock()
-	setCache[pb.Code] = setEntry{pb.UpdatedAt, set}
-	setMu.Unlock()
-	return set, nil
+	return defs, rows.Err()
 }
 
 func decodeJSON(b []byte) any {

@@ -1,0 +1,60 @@
+# Billing catalogue for the developer portal.
+#
+# `multiplier` multiplies the base API key rate limits enforced by
+# Rack::Attack: API_KEY_DAILY_LIMIT (default 1000) requests per day and 60
+# requests per minute. A plan with multiplier 25 therefore allows 25.000
+# requests/day and 1.500 requests/minute.
+#
+# Amounts are in the smallest currency unit (centavos/cents) and exist only so
+# the portal can render a price table. Stripe remains the source of truth for
+# what is actually charged: the checkout session is created from the price id
+# resolved out of the environment variable named in `stripe_price_id_env`.
+#
+# Plan names and descriptions are NOT here on purpose. The portal is
+# multilingual and owns that copy in its locale files, keyed by plan code.
+trial_period_days: 7
+
+plans:
+  - code: parish
+    purchasable: true
+    multiplier: 5
+    max_keys: 3
+    prices:
+      brl:
+        month: { amount_cents: 2900, stripe_price_id_env: STRIPE_PRICE_PARISH_MONTH_BRL }
+        year: { amount_cents: 29000, stripe_price_id_env: STRIPE_PRICE_PARISH_YEAR_BRL }
+      usd:
+        month: { amount_cents: 900, stripe_price_id_env: STRIPE_PRICE_PARISH_MONTH_USD }
+        year: { amount_cents: 9000, stripe_price_id_env: STRIPE_PRICE_PARISH_YEAR_USD }
+
+  - code: diocese
+    purchasable: true
+    multiplier: 25
+    max_keys: 10
+    prices:
+      brl:
+        month: { amount_cents: 9900, stripe_price_id_env: STRIPE_PRICE_DIOCESE_MONTH_BRL }
+        year: { amount_cents: 99000, stripe_price_id_env: STRIPE_PRICE_DIOCESE_YEAR_BRL }
+      usd:
+        month: { amount_cents: 2900, stripe_price_id_env: STRIPE_PRICE_DIOCESE_MONTH_USD }
+        year: { amount_cents: 29000, stripe_price_id_env: STRIPE_PRICE_DIOCESE_YEAR_USD }
+
+  - code: province
+    purchasable: true
+    multiplier: 100
+    max_keys: 25
+    prices:
+      brl:
+        month: { amount_cents: 29900, stripe_price_id_env: STRIPE_PRICE_PROVINCE_MONTH_BRL }
+        year: { amount_cents: 299000, stripe_price_id_env: STRIPE_PRICE_PROVINCE_YEAR_BRL }
+      usd:
+        month: { amount_cents: 8900, stripe_price_id_env: STRIPE_PRICE_PROVINCE_MONTH_USD }
+        year: { amount_cents: 89000, stripe_price_id_env: STRIPE_PRICE_PROVINCE_YEAR_USD }
+
+  # Granted, never sold: every developer who had a portal account before
+  # billing shipped keeps this plan for free, for life.
+  - code: founder
+    purchasable: false
+    multiplier: 5
+    max_keys: 3
+    prices: {}

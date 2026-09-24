@@ -22,6 +22,23 @@ import (
 // userFixture recreates the users the users scenarios act as, at fixed ids
 // so every id in a response is the same on both sides.
 const userFixture = `
+-- Every table with a foreign key to users loses the fixture users' rows
+-- first (a few passes, so rows that other fixture rows reference go last).
+DO $$
+DECLARE r record;
+BEGIN
+  FOR pass IN 1..4 LOOP
+    FOR r IN SELECT c.conrelid::regclass AS tbl, a.attname AS col FROM pg_constraint c
+      JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+      WHERE c.contype = 'f' AND c.confrelid = 'users'::regclass AND c.conrelid <> 'users'::regclass
+    LOOP
+      BEGIN
+        EXECUTE format('DELETE FROM %s WHERE %I BETWEEN 990001 AND 990099', r.tbl, r.col);
+      EXCEPTION WHEN foreign_key_violation THEN NULL;
+      END;
+    END LOOP;
+  END LOOP;
+END $$;
 DELETE FROM active_storage_attachments WHERE record_type = 'User' AND record_id BETWEEN 990001 AND 990099;
 DELETE FROM active_storage_blobs b WHERE NOT EXISTS (SELECT 1 FROM active_storage_attachments a WHERE a.blob_id = b.id) AND b.id NOT BETWEEN 900001 AND 900099;
 DELETE FROM completions WHERE user_id BETWEEN 990001 AND 990099;
@@ -46,7 +63,8 @@ SELECT 990002, 990002, pb.id, bv.id, 'basic', TRUE, '2026-01-02 00:00:00', '{}',
 FROM prayer_books pb, bible_versions bv WHERE pb.code = 'loc_2015' AND bv.code = 'nvi';
 DELETE FROM completions WHERE id BETWEEN 990001 AND 990099;
 INSERT INTO completions (id, user_id, date_reference, office_type, duration_seconds, prayer_book_id, created_at, updated_at)
-SELECT 990000 + row_number() OVER (ORDER BY d, o), 990001, d::date, o, 300, (SELECT id FROM prayer_books WHERE code = 'loc_2015'), d + interval '8 hours', d + interval '8 hours'
+SELECT 990000 + row_number() OVER (ORDER BY d, o), 990001, d::date, o, 300, (SELECT id FROM prayer_books WHERE code = 'loc_2015'),
+  d + CASE o WHEN 'morning' THEN interval '8 hours' ELSE interval '19 hours' END, d + CASE o WHEN 'morning' THEN interval '8 hours' ELSE interval '19 hours' END
 FROM generate_series('2026-03-01'::timestamp, '2026-03-06'::timestamp, interval '1 day') d, unnest(ARRAY['morning','evening']) o;
 DELETE FROM fcm_tokens WHERE id = 990001;
 INSERT INTO fcm_tokens (id, user_id, token, platform, created_at, updated_at) VALUES (990001, 990001, 'tok-existing', 'android', '2026-01-01', '2026-01-01');

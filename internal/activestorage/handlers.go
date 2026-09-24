@@ -37,12 +37,11 @@ func setBlob(c *web.Context, param string) *Blob {
 // requestBase is ActiveStorage::Current.url_options as a URL prefix.
 func requestBase(c *web.Context) string {
 	// config.assume_ssl: every request is treated as https.
-	scheme := "https"
-	host := c.R.Host
-	if fh := c.HeaderValue("X-Forwarded-Host"); fh != "" {
-		host = strings.TrimSpace(strings.Split(fh, ",")[0])
+	host, port := c.URLOptions()
+	if port != 0 {
+		return "https://" + host + ":" + strconv.Itoa(port)
 	}
-	return scheme + "://" + host
+	return "https://" + host
 }
 
 // BlobRedirect ports ActiveStorage::Blobs::RedirectController#show.

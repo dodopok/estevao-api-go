@@ -33,3 +33,20 @@ func NoMethodErrorMessage(method string, recv any) string {
 	}
 	return "undefined method `" + method + "' for " + desc + ":" + ClassName(recv)
 }
+
+// ImplicitConversionMessage is the TypeError Ruby raises when v is passed
+// where a String (or Integer, ...) is required: "no implicit conversion of
+// Integer into String", "... of nil into String".
+func ImplicitConversionMessage(v any, into string) string {
+	desc := ClassName(v)
+	switch x := v.(type) {
+	case nil:
+		desc = "nil"
+	case bool:
+		desc = "false"
+		if x {
+			desc = "true"
+		}
+	}
+	return "no implicit conversion of " + desc + " into " + into
+}
