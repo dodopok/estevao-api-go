@@ -277,3 +277,42 @@ func SortedKeys(m *Map) []string {
 
 // Now is overridable for tests.
 var Now = time.Now
+
+// Strip mirrors String#strip (ASCII whitespace and NUL).
+func Strip(s string) string { return strings.Trim(s, " \t\n\v\f\r\x00") }
+
+// Squish mirrors ActiveSupport's String#squish.
+func Squish(s string) string { return strings.Join(strings.Fields(s), " ") }
+
+// SplitString mirrors String#split(str) with a literal separator: trailing
+// empty fields are removed; " " splits on runs of whitespace (awk style).
+func SplitString(s, sep string) []string {
+	if sep == " " {
+		return strings.Fields(s)
+	}
+	if s == "" {
+		return []string{}
+	}
+	parts := strings.Split(s, sep)
+	for len(parts) > 0 && parts[len(parts)-1] == "" {
+		parts = parts[:len(parts)-1]
+	}
+	return parts
+}
+
+// SplitStringN mirrors String#split(str, limit) for limit > 0.
+func SplitStringN(s, sep string, limit int) []string {
+	if s == "" {
+		return []string{}
+	}
+	return strings.SplitN(s, sep, limit)
+}
+
+// StripAll maps Strip over a slice.
+func StripAll(in []string) []string {
+	out := make([]string, len(in))
+	for i, s := range in {
+		out[i] = Strip(s)
+	}
+	return out
+}

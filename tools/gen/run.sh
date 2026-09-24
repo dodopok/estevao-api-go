@@ -7,6 +7,6 @@ set -a; source "$GO_ROOT/test/oracle/oracle.env"; set +a
 export LANG=C.UTF-8 BUNDLE_PATH="${BUNDLE_PATH:-/tmp/bundle}"
 cd "$RAILS_ROOT"
 for f in "$GO_ROOT"/tools/gen/*.rb; do
-  bin/rails runner "$f" "$GO_ROOT" 2>&1 | grep '^wrote' || true
+  LD_PRELOAD="$GO_ROOT/test/oracle/stable_qsort.so" RBENV_VERSION=3.2.3 BUNDLE_PATH=/tmp/bundle32 /opt/rbenv/shims/bundle exec bin/rails runner "$f" "$GO_ROOT" 2>&1 | grep '^wrote' || true
 done
 gofmt -w "$GO_ROOT/internal"
