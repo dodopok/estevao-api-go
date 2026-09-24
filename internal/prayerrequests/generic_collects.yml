@@ -1,0 +1,249 @@
+# Generic intercession collects for Weekly Prayer Requests
+# 20 pre-written Anglican collect-style prayers per language
+# Rotated weekly based on week number (week_start.cweek % 20)
+#
+# These replace AI-generated prayers for ethical reasons.
+# The AI is now used only to summarize user prayer requests into a concise list.
+
+pt-BR:
+  - >-
+    Deus todo-poderoso e eterno, que nos convidas a depositar diante de ti todas as nossas
+    necessidades e esperanças, recebe com misericórdia as nossas súplicas, e concede-nos a
+    graça de confiar plenamente em tua providência; por Jesus Cristo nosso Senhor.
+  - >-
+    Ó Deus, de quem procedem todos os bons desejos e todas as justas obras, inclina os teus
+    ouvidos às nossas orações e dirige os nossos corações pelo caminho da tua paz; por Jesus
+    Cristo nosso Senhor.
+  - >-
+    Pai celestial, que conheces todas as nossas fraquezas e necessidades antes mesmo de as
+    apresentarmos, tem compaixão de nós e concede que, pela intercessão do teu Filho,
+    recebamos o auxílio de que precisamos; por Jesus Cristo nosso Senhor.
+  - >-
+    Senhor Deus, refúgio nosso e fortaleza, ouve as orações do teu povo e concede que aquilo
+    que pedimos fielmente possamos eficazmente receber; por Jesus Cristo nosso Senhor.
+  - >-
+    Deus de toda consolação, que nos mandaste orar uns pelos outros, recebe estas nossas
+    intercessões e, segundo a tua vontade, atende-nos com misericórdia e amor; por Jesus
+    Cristo nosso Senhor.
+  - >-
+    Ó Deus misericordioso, que nunca rejeitas os que te buscam de coração sincero, escuta as
+    nossas petições e concede-nos aquilo que nos convém segundo a tua sabedoria; por Jesus
+    Cristo nosso Senhor.
+  - >-
+    Pai celeste, fonte de toda graça e bondade, nós te apresentamos os nossos cuidados e
+    preocupações, confiantes na tua promessa de ouvir os que te invocam; concede-nos a tua
+    paz que excede todo entendimento; por Jesus Cristo nosso Senhor.
+  - >-
+    Senhor Deus, que pelo teu Espírito Santo intercedes por nós com gemidos inexprimíveis,
+    aceita estas nossas orações imperfeitas e, pela tua graça, transforma-as segundo a tua
+    perfeita vontade; por Jesus Cristo nosso Senhor.
+  - >-
+    Deus onipotente, que revelaste em Cristo o teu amor por toda a humanidade, concede que,
+    ao orarmos pelas necessidades que estão diante de nós, sejamos instrumentos da tua graça
+    e do teu cuidado; por Jesus Cristo nosso Senhor.
+  - >-
+    Ó Deus, nosso amparo e proteção, a quem recorremos em todas as nossas tribulações,
+    fortalece a nossa fé e concede-nos a certeza de que tu ages em todas as coisas para o bem
+    daqueles que te amam; por Jesus Cristo nosso Senhor.
+  - >-
+    Pai misericordioso, que não se esquece de nenhum dos seus filhos, ouve os clamores dos
+    nossos corações e, onde houver dor, traz cura; onde houver medo, concede coragem; onde
+    houver dúvida, fortalece a nossa fé; por Jesus Cristo nosso Senhor.
+  - >-
+    Senhor Deus, que prometes estar conosco em todos os momentos, sustenta-nos com a tua
+    presença e concede que, em meio às provações desta vida, encontremos descanso e esperança
+    em ti; por Jesus Cristo nosso Senhor.
+  - >-
+    Deus de amor, que desejas o bem de todas as tuas criaturas, recebe as orações que te
+    oferecemos por nós e pelos que amamos, e age em nossas vidas segundo a riqueza da tua
+    misericórdia; por Jesus Cristo nosso Senhor.
+  - >-
+    Ó Deus, Pai de nosso Senhor Jesus Cristo, que nos ensinou a pedir e nos prometeu que
+    receberíamos, atende as petições do teu povo com a abundância da tua graça; por Jesus
+    Cristo nosso Senhor.
+  - >-
+    Senhor, tu que sondas os corações e conheces todas as nossas necessidades, concede-nos a
+    humildade de reconhecer nossa dependência de ti e a fé para confiar na tua provisão; por
+    Jesus Cristo nosso Senhor.
+  - >-
+    Deus eterno, cujo amor não tem medida e cuja graça não tem fim, acolhe estas nossas
+    intercessões e, pelo poder do teu Espírito, opera em nós e através de nós para a glória
+    do teu nome; por Jesus Cristo nosso Senhor.
+  - >-
+    Pai bondoso, que nos convidas a lançar sobre ti todas as nossas ansiedades, recebe os
+    pedidos que te apresentamos nesta hora e, na tua fidelidade, responde-nos conforme a tua
+    vontade soberana; por Jesus Cristo nosso Senhor.
+  - >-
+    Ó Deus, que és rico em misericórdia e grande em compaixão, olha com favor para as
+    necessidades do teu povo e concede que, ao buscarmos o teu auxílio, encontremos a tua
+    graça suficiente para cada dia; por Jesus Cristo nosso Senhor.
+  - >-
+    Senhor Deus todo-poderoso, que governas todas as coisas com sabedoria e amor, dirige as
+    circunstâncias das nossas vidas conforme o teu propósito e concede-nos a paz de saber que
+    tudo está em tuas mãos; por Jesus Cristo nosso Senhor.
+  - >-
+    Deus de toda esperança, que enches os que creem de toda alegria e paz, ouve estas nossas
+    orações e, pelo poder do Espírito Santo, faze-nos transbordar de esperança em meio a
+    todas as circunstâncias; por Jesus Cristo nosso Senhor.
+
+en:
+  - >-
+    Almighty and everlasting God, who dost invite us to lay before thee all our needs and
+    hopes, receive with mercy our supplications, and grant us the grace to trust fully in thy
+    providence; through Jesus Christ our Lord.
+  - >-
+    O God, from whom all good desires and all righteous works do proceed, incline thine ear
+    to our prayers and direct our hearts in the way of thy peace; through Jesus Christ our
+    Lord.
+  - >-
+    Heavenly Father, who knowest all our weaknesses and needs before we present them, have
+    compassion upon us and grant that, through the intercession of thy Son, we may receive
+    the help we need; through Jesus Christ our Lord.
+  - >-
+    Lord God, our refuge and strength, hear the prayers of thy people and grant that what we
+    ask in faith we may effectually receive; through Jesus Christ our Lord.
+  - >-
+    God of all comfort, who hast commanded us to pray for one another, receive these our
+    intercessions and, according to thy will, answer us with mercy and love; through Jesus
+    Christ our Lord.
+  - >-
+    O merciful God, who never dost reject those who seek thee with a sincere heart, hear our
+    petitions and grant us that which is fitting according to thy wisdom; through Jesus Christ
+    our Lord.
+  - >-
+    Heavenly Father, fountain of all grace and goodness, we present to thee our cares and
+    concerns, trusting in thy promise to hear those who call upon thee; grant us thy peace
+    which surpasseth all understanding; through Jesus Christ our Lord.
+  - >-
+    Lord God, who by thy Holy Spirit dost intercede for us with groanings that cannot be
+    uttered, accept these our imperfect prayers and, by thy grace, transform them according
+    to thy perfect will; through Jesus Christ our Lord.
+  - >-
+    Almighty God, who hast revealed in Christ thy love for all humanity, grant that, as we
+    pray for the needs before us, we may be instruments of thy grace and care; through Jesus
+    Christ our Lord.
+  - >-
+    O God, our help and protection, to whom we turn in all our troubles, strengthen our faith
+    and grant us the assurance that thou dost work all things for the good of those who love
+    thee; through Jesus Christ our Lord.
+  - >-
+    Merciful Father, who dost forget none of thy children, hear the cries of our hearts and,
+    where there is pain, bring healing; where there is fear, grant courage; where there is
+    doubt, strengthen our faith; through Jesus Christ our Lord.
+  - >-
+    Lord God, who dost promise to be with us at all times, sustain us with thy presence and
+    grant that, amid the trials of this life, we may find rest and hope in thee; through
+    Jesus Christ our Lord.
+  - >-
+    God of love, who desirest the good of all thy creatures, receive the prayers we offer for
+    ourselves and for those we love, and act in our lives according to the riches of thy
+    mercy; through Jesus Christ our Lord.
+  - >-
+    O God, Father of our Lord Jesus Christ, who taught us to ask and promised that we should
+    receive, answer the petitions of thy people with the abundance of thy grace; through Jesus
+    Christ our Lord.
+  - >-
+    Lord, thou who searchest the hearts and knowest all our needs, grant us the humility to
+    acknowledge our dependence upon thee and the faith to trust in thy provision; through
+    Jesus Christ our Lord.
+  - >-
+    Eternal God, whose love hath no measure and whose grace hath no end, receive these our
+    intercessions and, by the power of thy Spirit, work in us and through us to the glory of
+    thy name; through Jesus Christ our Lord.
+  - >-
+    Gracious Father, who dost invite us to cast all our anxieties upon thee, receive the
+    requests we bring before thee this hour and, in thy faithfulness, answer us according to
+    thy sovereign will; through Jesus Christ our Lord.
+  - >-
+    O God, who art rich in mercy and great in compassion, look with favour upon the needs of
+    thy people and grant that, as we seek thy help, we may find thy grace sufficient for each
+    day; through Jesus Christ our Lord.
+  - >-
+    Lord God Almighty, who dost govern all things with wisdom and love, direct the
+    circumstances of our lives according to thy purpose and grant us the peace of knowing
+    that all is in thy hands; through Jesus Christ our Lord.
+  - >-
+    God of all hope, who dost fill those who believe with all joy and peace, hear these our
+    prayers and, by the power of the Holy Spirit, make us to overflow with hope in all
+    circumstances; through Jesus Christ our Lord.
+
+es:
+  - >-
+    Dios todopoderoso y eterno, que nos invitas a depositar ante ti todas nuestras
+    necesidades y esperanzas, recibe con misericordia nuestras súplicas y concédenos la
+    gracia de confiar plenamente en tu providencia; por Jesucristo nuestro Señor.
+  - >-
+    Oh Dios, de quien proceden todos los buenos deseos y todas las obras justas, inclina tus
+    oídos a nuestras oraciones y dirige nuestros corazones por el camino de tu paz; por
+    Jesucristo nuestro Señor.
+  - >-
+    Padre celestial, que conoces todas nuestras debilidades y necesidades antes de que las
+    presentemos, ten compasión de nosotros y concede que, por la intercesión de tu Hijo,
+    recibamos la ayuda que necesitamos; por Jesucristo nuestro Señor.
+  - >-
+    Señor Dios, refugio nuestro y fortaleza, oye las oraciones de tu pueblo y concede que lo
+    que pedimos con fe podamos eficazmente recibir; por Jesucristo nuestro Señor.
+  - >-
+    Dios de todo consuelo, que nos mandaste orar unos por otros, recibe estas nuestras
+    intercesiones y, conforme a tu voluntad, respóndenos con misericordia y amor; por
+    Jesucristo nuestro Señor.
+  - >-
+    Oh Dios misericordioso, que nunca rechazas a los que te buscan con corazón sincero,
+    escucha nuestras peticiones y concédenos aquello que nos conviene según tu sabiduría; por
+    Jesucristo nuestro Señor.
+  - >-
+    Padre celestial, fuente de toda gracia y bondad, te presentamos nuestras preocupaciones y
+    cuidados, confiando en tu promesa de oír a los que te invocan; concédenos tu paz que
+    sobrepasa todo entendimiento; por Jesucristo nuestro Señor.
+  - >-
+    Señor Dios, que por tu Espíritu Santo intercedes por nosotros con gemidos indecibles,
+    acepta estas nuestras oraciones imperfectas y, por tu gracia, transfórmalas según tu
+    perfecta voluntad; por Jesucristo nuestro Señor.
+  - >-
+    Dios omnipotente, que revelaste en Cristo tu amor por toda la humanidad, concede que, al
+    orar por las necesidades que tenemos ante nosotros, seamos instrumentos de tu gracia y
+    cuidado; por Jesucristo nuestro Señor.
+  - >-
+    Oh Dios, amparo y protección nuestra, a quien acudimos en todas nuestras tribulaciones,
+    fortalece nuestra fe y concédenos la certeza de que tú obras en todas las cosas para el
+    bien de los que te aman; por Jesucristo nuestro Señor.
+  - >-
+    Padre misericordioso, que no se olvida de ninguno de sus hijos, oye los clamores de
+    nuestros corazones y, donde haya dolor, trae sanación; donde haya temor, concede valor;
+    donde haya duda, fortalece nuestra fe; por Jesucristo nuestro Señor.
+  - >-
+    Señor Dios, que prometes estar con nosotros en todo momento, susténtanos con tu presencia
+    y concede que, en medio de las pruebas de esta vida, encontremos descanso y esperanza en
+    ti; por Jesucristo nuestro Señor.
+  - >-
+    Dios de amor, que deseas el bien de todas tus criaturas, recibe las oraciones que te
+    ofrecemos por nosotros y por los que amamos, y actúa en nuestras vidas según la riqueza
+    de tu misericordia; por Jesucristo nuestro Señor.
+  - >-
+    Oh Dios, Padre de nuestro Señor Jesucristo, que nos enseñó a pedir y nos prometió que
+    recibiríamos, atiende las peticiones de tu pueblo con la abundancia de tu gracia; por
+    Jesucristo nuestro Señor.
+  - >-
+    Señor, tú que escudriñas los corazones y conoces todas nuestras necesidades, concédenos
+    la humildad de reconocer nuestra dependencia de ti y la fe para confiar en tu provisión;
+    por Jesucristo nuestro Señor.
+  - >-
+    Dios eterno, cuyo amor no tiene medida y cuya gracia no tiene fin, acoge estas nuestras
+    intercesiones y, por el poder de tu Espíritu, obra en nosotros y a través de nosotros
+    para la gloria de tu nombre; por Jesucristo nuestro Señor.
+  - >-
+    Padre bondadoso, que nos invitas a echar sobre ti todas nuestras ansiedades, recibe los
+    pedidos que te presentamos en esta hora y, en tu fidelidad, respóndenos conforme a tu
+    voluntad soberana; por Jesucristo nuestro Señor.
+  - >-
+    Oh Dios, que eres rico en misericordia y grande en compasión, mira con favor las
+    necesidades de tu pueblo y concede que, al buscar tu auxilio, encontremos tu gracia
+    suficiente para cada día; por Jesucristo nuestro Señor.
+  - >-
+    Señor Dios todopoderoso, que gobiernas todas las cosas con sabiduría y amor, dirige las
+    circunstancias de nuestras vidas conforme a tu propósito y concédenos la paz de saber que
+    todo está en tus manos; por Jesucristo nuestro Señor.
+  - >-
+    Dios de toda esperanza, que llenas a los que creen de toda alegría y paz, oye estas
+    nuestras oraciones y, por el poder del Espíritu Santo, haznos rebosar de esperanza en
+    medio de todas las circunstancias; por Jesucristo nuestro Señor.

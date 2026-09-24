@@ -77,22 +77,7 @@ func journalErrors(j *journal) []string {
 // journalParams ports journal_params: the permitted keys (params[:journal]
 // or, without it, the top level) that are present.
 func journalParams(c *web.Context) *rb.Map {
-	src := c.Params()
-	if j, ok := src.Get("journal").(*rb.Map); ok && j.Len() > 0 {
-		src = j
-	} else if s := src.Get("journal"); s != nil && !rb.Blank(s) {
-		if _, isMap := s.(*rb.Map); !isMap {
-			// require(:journal) returns a scalar; permit on it raises.
-			panic(&web.StandardError{Class: "NoMethodError", Message: rb.NoMethodErrorMessage("permit", s)})
-		}
-	}
-	out := rb.NewMap()
-	for _, k := range []string{"date_reference", "entry_type", "office_type", "content"} {
-		if v, ok := src.Lookup(k); ok && permittedScalar(v) {
-			out.Set(k, v)
-		}
-	}
-	return out
+	return requirePermit(c, "journal", "date_reference", "entry_type", "office_type", "content")
 }
 
 func applyJournal(j *journal, attrs *rb.Map) {

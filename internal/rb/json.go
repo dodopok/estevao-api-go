@@ -305,3 +305,15 @@ func (d Decimal) String() string {
 	}
 	return s
 }
+
+// ToJSON ports Object#to_json under ActiveSupport as this app configures it:
+// the same encoding as render json: (which Rails 8.1 no longer escapes) with
+// <, > and & escaped (escape_html_entities_in_json; JS separators are not).
+func ToJSON(v any) []byte {
+	out := JSON(v)
+	if !bytes.ContainsAny(out, "<>&") {
+		return out
+	}
+	r := strings.NewReplacer("<", `\u003c`, ">", `\u003e`, "&", `\u0026`)
+	return []byte(r.Replace(string(out)))
+}

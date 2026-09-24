@@ -1007,3 +1007,22 @@ func allDigits(s string) bool {
 	}
 	return s != ""
 }
+
+// JD is the Julian Day Number of the date (Julian calendar before the
+// ITALY reform, as with Ruby's Date).
+func (d YMD) JD() int64 {
+	jd, _ := civilToJD(d.Y, d.M, d.D)
+	return jd
+}
+
+// YMDFromJD is the calendar date of a Julian Day Number.
+func YMDFromJD(jd int64) YMD { return ymdOf(jd) }
+
+// AddDays ports Date#+ / Date#- with an integer.
+func (d YMD) AddDays(n int64) YMD { return ymdOf(d.JD() + n) }
+
+// Wday ports Date#wday (0 is Sunday).
+func (d YMD) Wday() int64 { return floorMod(d.JD()+1, 7) }
+
+// Cweek ports Date#cweek.
+func (d YMD) Cweek() int64 { _, w, _ := commercialOf(d.JD()); return w }

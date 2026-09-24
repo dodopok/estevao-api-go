@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
 
@@ -344,6 +345,10 @@ func (s *Server) run(c *Context, ep Endpoint) {
 			msg = se.Message
 		} else if err, ok := rec.(error); ok {
 			msg = err.Error()
+			// An unexpected PostgreSQL error reads as ActiveRecord reports it.
+			if _, pgMsg, isPG := db.RubyError(err); isPG {
+				msg = pgMsg
+			}
 		}
 		c.JSON(500, rb.M("error", "Internal server error", "message", msg, "trace_id", nil))
 	}()

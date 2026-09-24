@@ -48,7 +48,8 @@ end
 # Outbound calls made with http.rb (RevenueCat, ...): send the production
 # base URLs to the fakes named by the same variables the Go server reads.
 ORACLE_HTTP_REWRITES = {
-  "https://api.revenuecat.com/v1" => ENV["REVENUECAT_API_URL"].presence
+  "https://api.revenuecat.com/v1" => ENV["REVENUECAT_API_URL"].presence,
+  "https://api.perplexity.ai" => ENV["PERPLEXITY_API_URL"].presence
 }.compact.freeze
 unless ORACLE_HTTP_REWRITES.empty?
   require "http"

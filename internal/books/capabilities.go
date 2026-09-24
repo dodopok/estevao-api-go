@@ -269,12 +269,16 @@ func (c *Capabilities) NormalizeLectionaryServiceVariant(value any) string {
 	return c.NormalizeLectionaryVariant(value)
 }
 
-// PrayerRequestsPlacement ports prayer_requests_placement.
-func (c *Capabilities) PrayerRequestsPlacement() *rb.Map {
+// PrayerRequestsPlacement ports prayer_requests_placement: whatever the
+// book declares when present, else the default.
+func (c *Capabilities) PrayerRequestsPlacement() any {
 	if d := c.DailyOffice().Get("prayer_requests_placement"); rb.Present(d) {
-		if m, ok := d.(*rb.Map); ok {
-			return m
-		}
+		return d
 	}
+	return DefaultPrayerRequestsPlacement()
+}
+
+// DefaultPrayerRequestsPlacement ports DEFAULT_PRAYER_REQUESTS_PLACEMENT.
+func DefaultPrayerRequestsPlacement() *rb.Map {
 	return rb.M("morning", "collects", "evening", "collects", "midday", "collects", "compline", "collects")
 }
