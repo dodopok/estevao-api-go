@@ -3,6 +3,7 @@ package v1
 
 import (
 	"context"
+	"github.com/dodopok/estevao-api-go/internal/civil"
 	"strings"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
@@ -213,6 +214,7 @@ type sharedOffice struct {
 	ShortCode      string
 	PrayerBookCode string
 	OfficeType     string
+	Date           civil.Date
 	Seed           int
 	Preferences    *rb.Map
 	UserID         *int64
@@ -236,7 +238,7 @@ func (r *resolver) sharedOffice() *sharedOffice {
 		panic(&web.StandardError{Class: "Api::V1::Concerns::PreferencesResolver::SharedOfficeNotFoundError", Message: "Link não encontrado"})
 	}
 	r.shared = &sharedOffice{ID: so.ID, ShortCode: so.ShortCode, PrayerBookCode: so.PrayerBookCode,
-		OfficeType: so.OfficeType, Seed: so.Seed, Preferences: so.Preferences, UserID: so.UserID}
+		OfficeType: so.OfficeType, Date: so.Date, Seed: so.Seed, Preferences: so.Preferences, UserID: so.UserID}
 	return r.shared
 }
 

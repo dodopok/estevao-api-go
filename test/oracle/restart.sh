@@ -11,6 +11,7 @@ sleep 2
 # on planner statistics; both stacks must read under the same ones, and the
 # oracle must not replay responses cached under older ones.
 set -a; source "$DIR/oracle.env"; set +a
+for f in "$DIR"/../diff/fixtures/*.sql; do psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -q -f "$f" || exit 1; done
 psql "$DATABASE_URL" -qc "ANALYZE" || true
 redis-cli -n 1 flushdb >/dev/null; redis-cli -n 2 flushdb >/dev/null
 "$DIR/gen-keys.sh"

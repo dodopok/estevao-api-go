@@ -20,5 +20,9 @@ func Endpoints() map[string]web.HandlerFunc {
 		"api/v1/celebrations#types":           CelebrationsTypes,
 		"api/v1/liturgical_explanations#show": LiturgicalExplanationsShow,
 		"api/v1/lectionary#cycle_info":        LectionaryCycleInfo,
+		"api/v1/daily_office#today":           DailyOfficeToday,
+		"api/v1/daily_office#show":            DailyOfficeShow,
+		"api/v1/daily_office#family_rite":     DailyOfficeFamilyRite,
+		"api/v1/daily_office#preferences":     DailyOfficePreferences,
 	}
 }

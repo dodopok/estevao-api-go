@@ -86,3 +86,6 @@ func Int(key string, def int) int {
 // Production is always true for the Go service: it reproduces the Rails
 // production behaviour (error rendering, verification defaults).
 const Production = true
+
+// RailsEnv is Rails.env (RAILS_ENV, "development" when unset).
+func RailsEnv() string { return PresenceOr("RAILS_ENV", "development") }

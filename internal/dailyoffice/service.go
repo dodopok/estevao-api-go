@@ -119,6 +119,12 @@ func NewService(ctx context.Context, date civil.Date, officeType string, prefere
 
 // Call ports #call for a caller without audio access.
 func (s *Service) Call(ctx context.Context) *rb.Map {
+	return RemoveAudioData(s.Base(ctx)).(*rb.Map)
+}
+
+// Base ports fetch_base_office (computed; Rails caches it per preferences
+// and Prayer Book version): the office before personalization.
+func (s *Service) Base(ctx context.Context) *rb.Map {
 	code := rb.ToS(s.Prefs.Get("prayer_book_code"))
 	build := fetchBuilder(code)
 	pb, err := store.PrayerBookByCode(ctx, code)
@@ -140,8 +146,7 @@ func (s *Service) Call(ctx context.Context) *rb.Map {
 		web.Raise("UnsupportedOfficeType", "O ofício '"+s.OfficeType+"' não está disponível para o Prayer Book "+code+".", "")
 	}
 	c := NewContext(ctx, s.Date, s.OfficeType, s.Prefs)
-	out := build(ctx, c).Call()
-	return RemoveAudioData(out).(*rb.Map)
+	return build(ctx, c).Call()
 }
 
 // RemoveAudioData ports remove_audio_data!.
