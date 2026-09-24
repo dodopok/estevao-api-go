@@ -13,7 +13,7 @@ import (
 var statusTexts = map[int]string{
 	400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 404: "Not Found",
 	405: "Method Not Allowed", 406: "Not Acceptable", 409: "Conflict", 413: "Content Too Large",
-	415: "Unsupported Media Type", 422: "Unprocessable Content", 429: "Too Many Requests",
+	415: "Unsupported Media Type", 416: "Range Not Satisfiable", 422: "Unprocessable Content", 429: "Too Many Requests",
 	500: "Internal Server Error", 501: "Not Implemented", 502: "Bad Gateway", 503: "Service Unavailable",
 }
 
@@ -136,6 +136,18 @@ func requestFormat(r *http.Request) string {
 func PublicException(r *http.Request, status int) *Response {
 	h := http.Header{}
 	ct := requestFormat(r)
+	// A routed format (the path extension) wins, as in request.formats.
+	if holder, ok := r.Context().Value(routeFormatKey{}).(*string); ok && *holder != "" {
+		ct = extensionMimes[*holder]
+		if ct == "" {
+			for mime, sym := range mimeSymbols {
+				if sym == *holder {
+					ct = mime
+					break
+				}
+			}
+		}
+	}
 	text := StatusText(status)
 	var body string
 	switch mimeSymbols[ct] {
@@ -156,3 +168,6 @@ func PublicException(r *http.Request, status int) *Response {
 	h.Set("Content-Type", ct+"; charset=UTF-8")
 	return &Response{Status: status, Header: h, Body: []byte(body)}
 }
+
+// routeFormatKey carries the matched route's format to the exceptions app.
+type routeFormatKey struct{}

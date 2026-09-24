@@ -20,3 +20,16 @@ func RaiseNoMethodOnNil(method string) {
 func RaiseKeyError(inspectedKey string) {
 	panic(&RubyError{Class: "KeyError", Message: "key not found: " + inspectedKey})
 }
+
+// NoMethodErrorMessage renders Ruby 3.2's NoMethodError message for a
+// receiver: its inspect (when at most 65 characters) and class.
+func NoMethodErrorMessage(method string, recv any) string {
+	if recv == nil {
+		return "undefined method `" + method + "' for nil:NilClass"
+	}
+	desc := Inspect(recv)
+	if len([]rune(desc)) > 65 {
+		desc = "#<" + ClassName(recv) + ">"
+	}
+	return "undefined method `" + method + "' for " + desc + ":" + ClassName(recv)
+}

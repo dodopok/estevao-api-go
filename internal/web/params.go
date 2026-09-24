@@ -1,7 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"errors"
+	"io"
+	"mime"
+	"mime/multipart"
 	"strings"
 	"unicode/utf8"
 
@@ -244,4 +248,56 @@ func paramsHashHasKey(h *rb.Map, key string) bool {
 
 func splitBrackets(key string) []string {
 	return strings.FieldsFunc(key, func(r rune) bool { return r == '[' || r == ']' })
+}
+
+// UploadedFile ports ActionDispatch::Http::UploadedFile: a multipart file
+// part (ContentType is nil when the part declared none).
+type UploadedFile struct {
+	OriginalFilename string
+	ContentType      *string
+	Data             []byte
+}
+
+// Size is the file's byte size.
+func (f *UploadedFile) Size() int { return len(f.Data) }
+
+// ParseMultipart ports Rack::Multipart::Parser: fields and files are
+// normalized into nested params like a query string.
+func ParseMultipart(body []byte, boundary string) (*rb.Map, error) {
+	params := rb.NewMap()
+	r := multipart.NewReader(bytes.NewReader(body), boundary)
+	for {
+		part, err := r.NextPart()
+		if err == io.EOF {
+			return params, nil
+		}
+		if err != nil {
+			return nil, ErrBadParams
+		}
+		name := part.FormName()
+		data, err := io.ReadAll(part)
+		if err != nil {
+			return nil, ErrBadParams
+		}
+		var v any
+		_, params2, _ := mime.ParseMediaType(part.Header.Get("Content-Disposition"))
+		if filename, isFile := params2["filename"]; isFile {
+			if filename == "" {
+				continue // Rack drops file parts without a filename
+			}
+			f := &UploadedFile{OriginalFilename: filename, Data: data}
+			if ct := part.Header.Get("Content-Type"); ct != "" {
+				f.ContentType = &ct
+			}
+			v = f
+		} else {
+			v = string(data)
+		}
+		if name == "" {
+			continue
+		}
+		if _, err := normalizeParams(params, &name, v, 0); err != nil {
+			return nil, err
+		}
+	}
 }

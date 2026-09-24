@@ -21,3 +21,26 @@ end
 Integrations::Firebase::Client.prepend(OracleFirebaseCertificates)
 
 run Rails.application
+
+# Firebase Admin: send the service-account token exchange and the account
+# deletion to the fake Google server (test/oracle/fake_google.py). The
+# credential checks and the request logic run unchanged.
+if (fake_google = ENV["ORACLE_FAKE_GOOGLE_URL"].presence)
+  require "googleauth"
+  Google::Auth::ServiceAccountCredentials.prepend(Module.new do
+    define_method(:token_credential_uri) { Addressable::URI.parse("#{fake_google}/token") }
+  end)
+  Integrations::Firebase::Client.prepend(Module.new do
+    define_method(:delete_user) do |uid:|
+      uri = URI("#{fake_google}/v1/projects/#{@project_id}/accounts:delete")
+      request = Net::HTTP::Post.new(uri)
+      request["Authorization"] = "Bearer #{@access_token}"
+      request["Content-Type"] = "application/json"
+      request.body = { localId: uid }.to_json
+      http = @http_factory.net_http(uri, env_key: "FIREBASE_HTTP_TIMEOUT")
+      Integrations::RetryPolicy.call(operation: "firebase.delete_user", max_attempts: 1, error_code: "FIREBASE_UNAVAILABLE") do
+        http.request(request)
+      end
+    end
+  end)
+end

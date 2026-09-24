@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -20,9 +21,12 @@ func main() {
 	goURL := flag.String("go", "http://localhost:3001", "Go server base URL")
 	suite := flag.String("suite", "all", "suite name (comma separated) or all")
 	maxFail := flag.Int("show", 30, "failures to print")
+	railsRedis := flag.String("rails-redis", "redis://localhost:6379/1", "the oracle's cache (flushed before each scenario)")
+	goRedis := flag.String("go-redis", "redis://localhost:6379/2", "the Go server's cache (flushed before each scenario)")
 	replay := flag.String("replay", "", "only send the suites' requests to this base URL (for effect snapshots)")
 	flag.Parse()
 
+	ctx := context.Background()
 	names := suites.Names()
 	if *suite != "all" {
 		names = strings.Split(*suite, ",")
@@ -31,6 +35,38 @@ func main() {
 	total, failed := 0, 0
 	shown := 0
 	for _, name := range names {
+		if scenarios, ok := suites.Scenarios(name); ok {
+			if *replay != "" {
+				continue
+			}
+			sf := 0
+			for _, sc := range scenarios {
+				total++
+				a, err := diff.RunScenario(ctx, sc, diff.Side{Name: "rails", BaseURL: *railsURL, RedisURL: *railsRedis})
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "scenario %s (rails): %v\n", sc.Name, err)
+					os.Exit(2)
+				}
+				b, err := diff.RunScenario(ctx, sc, diff.Side{Name: "go", BaseURL: *goURL, RedisURL: *goRedis})
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "scenario %s (go): %v\n", sc.Name, err)
+					os.Exit(2)
+				}
+				if d := diff.CompareScenario(sc, a, b); len(d) > 0 {
+					failed++
+					sf++
+					if shown < *maxFail {
+						shown++
+						fmt.Printf("DIFF [%s] scenario %s\n", name, sc.Name)
+						for _, line := range d {
+							fmt.Println("   ", line)
+						}
+					}
+				}
+			}
+			fmt.Printf("suite %-24s %5d scenarios %5d differences\n", name, len(scenarios), sf)
+			continue
+		}
 		reqs, err := suites.Build(name)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)

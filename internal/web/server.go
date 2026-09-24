@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -29,6 +30,10 @@ type Endpoint struct {
 	// subclasses not inheriting ApplicationController still get them; only
 	// Rack-level endpoints set this).
 	Plain bool
+	// Live marks ActionController::Live controllers: their streamed
+	// responses carry none of the controller default headers, skip
+	// Rack::ETag, Runtime and RequestId, and are sent chunked.
+	Live bool
 }
 
 // Response is a finished HTTP response inside the middleware chain.
@@ -38,6 +43,9 @@ type Response struct {
 	Body   []byte
 	// Static responses are served before Runtime/RequestId (no ids added).
 	Static bool
+	// Live responses are streamed (see Endpoint.Live).
+	Live    bool
+	KeepIDs bool
 }
 
 // Middleware may answer before the application (Rack::Attack).
@@ -101,9 +109,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			reqID = reqID[:255]
 		}
 	}
+	r = r.WithContext(context.WithValue(r.Context(), routeFormatKey{}, new(string)))
 	resp := s.showExceptions(r, reqID)
-	resp.Header.Set("X-Request-Id", reqID)
-	resp.Header.Set("X-Runtime", fmt.Sprintf("%0.6f", time.Since(start).Seconds()))
+	if !resp.Live || resp.KeepIDs || resp.Status == 304 {
+		resp.Header.Set("X-Request-Id", reqID)
+		resp.Header.Set("X-Runtime", fmt.Sprintf("%0.6f", time.Since(start).Seconds()))
+	}
 	resp.Header.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	if s.CORS != nil {
 		s.CORS.Decorate(r, resp)
@@ -133,9 +144,33 @@ func writeResponse(w http.ResponseWriter, r *http.Request, resp *Response) {
 		w.WriteHeader(resp.Status)
 		return
 	}
+	if resp.Live {
+		h.Del("Content-Length")
+		w.WriteHeader(resp.Status)
+		_, _ = w.Write(resp.Body)
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
+		return
+	}
 	h.Set("Content-Length", strconv.Itoa(len(resp.Body)))
 	w.WriteHeader(resp.Status)
 	_, _ = w.Write(resp.Body)
+}
+
+// rescueResponses is the part of ActionDispatch::ExceptionWrapper's
+// rescue_responses the ported controllers can raise.
+var rescueResponses = map[string]int{
+	"ActiveRecord::RecordNotFound":                 404,
+	"ActionController::ParameterMissing":           400,
+	"ActionController::BadRequest":                 400,
+	"ActionDispatch::Http::Parameters::ParseError": 400,
+	"ActiveRecord::RecordInvalid":                  422,
+	"ActiveRecord::RecordNotSaved":                 422,
+	"ActionController::InvalidAuthenticityToken":   422,
+	"ActionController::UnknownHttpMethod":          405,
+	"ActionController::MethodNotAllowed":           405,
+	"ActionController::NotImplemented":             501,
 }
 
 // showExceptions renders errors escaping the inner stack through the
@@ -146,6 +181,8 @@ func (s *Server) showExceptions(r *http.Request, reqID string) (resp *Response) 
 			status := 500
 			if es, ok := rec.(exceptionStatus); ok {
 				status = int(es)
+			} else if se, ok := rec.(*StandardError); ok && rescueResponses[se.Class] != 0 {
+				status = rescueResponses[se.Class]
 			} else if s.Logger != nil {
 				s.Logger.Error("unhandled error", "error", fmt.Sprint(rec), "request_id", reqID, "stack", string(debug.Stack()))
 			}
@@ -160,7 +197,7 @@ func (s *Server) showExceptions(r *http.Request, reqID string) (resp *Response) 
 func (s *Server) conditional(r *http.Request, reqID string) *Response {
 	resp := s.inner(r, reqID)
 	var digest string
-	if (resp.Status == 200 || resp.Status == 201) && resp.Header.Get("Etag") == "" && resp.Header.Get("Last-Modified") == "" && len(resp.Body) > 0 {
+	if !resp.Live && (resp.Status == 200 || resp.Status == 201) && resp.Header.Get("Etag") == "" && resp.Header.Get("Last-Modified") == "" && len(resp.Body) > 0 {
 		sum := sha256.Sum256(resp.Body)
 		digest = hex.EncodeToString(sum[:])[:32]
 		resp.Header.Set("Etag", `W/"`+digest+`"`)
@@ -175,6 +212,7 @@ func (s *Server) conditional(r *http.Request, reqID string) *Response {
 	if (r.Method == http.MethodGet || r.Method == http.MethodHead) && resp.Status == 200 {
 		if fresh(r, resp.Header) {
 			resp.Status = 304
+			resp.Live = false
 			resp.Header.Del("Content-Type")
 			resp.Header.Del("Content-Length")
 			resp.Body = nil
@@ -215,6 +253,9 @@ func (s *Server) inner(r *http.Request, reqID string) *Response {
 	if !ok {
 		panic(exceptionStatus(404))
 	}
+	if holder, ok := r.Context().Value(routeFormatKey{}).(*string); ok {
+		*holder = m.Format
+	}
 	ep, ok := s.Endpoints[m.Endpoint]
 	if !ok {
 		// A route exists in Rails whose controller is not part of the
@@ -240,7 +281,7 @@ func (s *Server) dispatch(r *http.Request, reqID string, m *Match, ep Endpoint) 
 		Header:     http.Header{},
 		Values:     map[string]any{},
 	}
-	if !ep.Plain {
+	if !ep.Plain && !ep.Live {
 		for _, kv := range defaultHeaders {
 			c.Header.Set(kv[0], kv[1])
 		}
@@ -258,7 +299,7 @@ func (s *Server) dispatch(r *http.Request, reqID string, m *Match, ep Endpoint) 
 	if c.written && c.Body != nil && c.varyAccept() && c.Header.Get("Vary") == "" {
 		c.Header.Set("Vary", "Accept")
 	}
-	return &Response{Status: c.Status, Header: c.Header, Body: c.Body}
+	return &Response{Status: c.Status, Header: c.Header, Body: c.Body, Live: ep.Live, KeepIDs: c.KeepRequestIDs}
 }
 
 func (s *Server) run(c *Context, ep Endpoint) {

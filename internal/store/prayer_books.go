@@ -177,3 +177,12 @@ func CelebrationsForBook(ctx context.Context, pb *PrayerBook) (*liturgical.BookC
 	celebrationsMu.Unlock()
 	return bc, nil
 }
+
+// PrayerBookByID loads a prayer book by id (nil when missing).
+func PrayerBookByID(ctx context.Context, id int64) (*PrayerBook, error) {
+	pbs, err := PrayerBooksWhere(ctx, "id = $1", id)
+	if err != nil || len(pbs) == 0 {
+		return nil, err
+	}
+	return pbs[0], nil
+}

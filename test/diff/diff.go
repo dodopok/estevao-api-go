@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
@@ -60,6 +61,9 @@ func Do(base string, req Request) (*Result, error) {
 	}
 	for k, v := range req.Headers {
 		hr.Header.Set(k, v)
+		if strings.EqualFold(k, "Host") {
+			hr.Host = v
+		}
 	}
 	resp, err := client.Do(hr)
 	if err != nil {
@@ -139,6 +143,9 @@ func Compare(a, b *Result) []string {
 			continue
 		}
 		av, bv := strings.Join(a.Header.Values(k), ", "), strings.Join(b.Header.Values(k), ", ")
+		if k == "Location" {
+			av, bv = normalizeLocation(av), normalizeLocation(bv)
+		}
 		if av != bv {
 			out = append(out, fmt.Sprintf("header %s rails=%q go=%q", k, av, bv))
 		}
@@ -264,4 +271,24 @@ func Token(keyPath, projectID string, claims map[string]any) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodRS256, c)
 	t.Header["kid"] = "test-kid"
 	return t.SignedString(k.(*rsa.PrivateKey))
+}
+
+var diskToken = regexp.MustCompile(`/rails/active_storage/disk/([^/?]+)`)
+var expField = regexp.MustCompile(`,"exp":"[^"]*"`)
+
+// normalizeLocation drops the expiry (a clock value) from an Active Storage
+// disk URL token and compares the rest of its payload; the signature over
+// the expiry goes with it.
+func normalizeLocation(v string) string {
+	v = volatileInValues[0].re.ReplaceAllString(v, volatileInValues[0].repl)
+	v = volatileInValues[1].re.ReplaceAllString(v, volatileInValues[1].repl)
+	return diskToken.ReplaceAllStringFunc(v, func(m string) string {
+		tok := diskToken.FindStringSubmatch(m)[1]
+		data, _, _ := strings.Cut(tok, "--")
+		raw, err := base64.StdEncoding.DecodeString(strings.ReplaceAll(data, "%3D", "="))
+		if err != nil {
+			return m
+		}
+		return "/rails/active_storage/disk/<" + expField.ReplaceAllString(string(raw), "") + ">"
+	})
 }

@@ -226,6 +226,11 @@ func Create(ctx context.Context, q db.Querier, providerUID, email string, name, 
 
 // UpdateColumns runs an UPDATE of the given columns plus updated_at.
 func UpdateColumns(ctx context.Context, q db.Querier, id int64, cols map[string]any) error {
+	return UpdateColumnsAt(ctx, q, id, cols, Now())
+}
+
+// UpdateColumnsAt is UpdateColumns with an explicit updated_at.
+func UpdateColumnsAt(ctx context.Context, q db.Querier, id int64, cols map[string]any, now time.Time) error {
 	if len(cols) == 0 {
 		return nil
 	}
@@ -238,7 +243,7 @@ func UpdateColumns(ctx context.Context, q db.Querier, id int64, cols map[string]
 		i++
 	}
 	sql += "updated_at = $" + strconv.Itoa(i) + " WHERE id = $" + strconv.Itoa(i+1)
-	args = append(args, Now(), id)
+	args = append(args, now, id)
 	_, err := q.Exec(ctx, sql, args...)
 	return err
 }

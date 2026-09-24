@@ -126,7 +126,7 @@ func Inspect(v any) string {
 		return "[" + strings.Join(parts, ", ") + "]"
 	case *Map:
 		parts := []string{}
-		x.Each(func(k string, e any) { parts = append(parts, strconv.Quote(k)+" => "+Inspect(e)) })
+		x.Each(func(k string, e any) { parts = append(parts, strconv.Quote(k)+"=>"+Inspect(e)) })
 		return "{" + strings.Join(parts, ", ") + "}"
 	}
 	return ToS(v)

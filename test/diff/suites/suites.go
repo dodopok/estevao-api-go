@@ -16,14 +16,31 @@ var registry = map[string]func() []diff.Request{}
 
 func register(name string, f func() []diff.Request) { registry[name] = f }
 
+var scenarioRegistry = map[string]func() []diff.Scenario{}
+
+func registerScenarios(name string, f func() []diff.Scenario) { scenarioRegistry[name] = f }
+
 // Names lists registered suites.
 func Names() []string {
 	var out []string
 	for k := range registry {
 		out = append(out, k)
 	}
+	for k := range scenarioRegistry {
+		out = append(out, k)
+	}
 	sort.Strings(out)
 	return out
+}
+
+// Scenarios returns the scenarios of a scenario suite (nil, false for a
+// request suite).
+func Scenarios(name string) ([]diff.Scenario, bool) {
+	f, ok := scenarioRegistry[name]
+	if !ok {
+		return nil, false
+	}
+	return f(), true
 }
 
 // Build returns the requests of a suite.

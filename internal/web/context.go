@@ -3,8 +3,10 @@ package web
 import (
 	"context"
 	"io"
+	"mime"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -31,6 +33,10 @@ type Context struct {
 	Body    []byte
 	written bool
 	halted  bool
+
+	// KeepRequestIDs makes a Live response still carry X-Request-Id and
+	// X-Runtime (a head after the stream was committed).
+	KeepRequestIDs bool
 
 	// Values carries per-request state set by filters (current user, key...).
 	Values map[string]any
@@ -153,6 +159,16 @@ func (c *Context) BodyParams() *rb.Map {
 				m.Set("_json", v)
 			}
 		}
+	case ct == "multipart/form-data":
+		_, mp, err := mime.ParseMediaType(c.R.Header.Get("Content-Type"))
+		if err != nil || mp["boundary"] == "" {
+			panic(exceptionStatus(400))
+		}
+		p, err := ParseMultipart(raw, mp["boundary"])
+		if err != nil {
+			panic(exceptionStatus(400))
+		}
+		m = p
 	case ct == "application/x-www-form-urlencoded":
 		p, err := ParseNestedQuery(string(raw))
 		if err != nil {
@@ -184,3 +200,52 @@ func (c *Context) HasHeader(name string) bool {
 	_, ok := c.R.Header[http.CanonicalHeaderKey(name)]
 	return ok
 }
+
+// Redirect ports redirect_to(url, status:): Location and an empty HTML body.
+func (c *Context) Redirect(status int, location string) {
+	c.Status = status
+	c.Body = nil
+	c.Header.Set("Location", location)
+	c.Header.Set("Content-Type", "text/html; charset=utf-8")
+	c.written = true
+}
+
+// HeadBase ports head from a before_action of an ActionController::Base
+// controller: an empty text/html response.
+func (c *Context) HeadBase(status int) {
+	c.HeadStatus(status)
+	c.Header.Set("Content-Type", "text/html")
+}
+
+// HeadFormat ports head inside an action of an ActionController::Base
+// controller: the content type is the route format's (the path extension),
+// text/html without one.
+func (c *Context) HeadFormat(status int) {
+	c.HeadStatus(status)
+	ct := "text/html"
+	if c.Format != "" {
+		ct = ""
+		for mime, sym := range mimeSymbols {
+			if sym == c.Format && (ct == "" || mime < ct) {
+				ct = mime
+			}
+		}
+		if m, ok := extensionMimes[c.Format]; ok {
+			ct = m
+		}
+		if ct == "" {
+			ct = "text/html"
+		}
+	}
+	c.Header.Set("Content-Type", ct)
+}
+
+// extensionMimes are the registered types whose symbol is not unique.
+var extensionMimes = map[string]string{
+	"html": "text/html", "text": "text/plain", "txt": "text/plain", "js": "text/javascript", "xml": "application/xml",
+	"json": "application/json", "yaml": "application/x-yaml", "jpeg": "image/jpeg", "jpg": "image/jpeg",
+	"png": "image/png", "gif": "image/gif", "pdf": "application/pdf", "csv": "text/csv",
+}
+
+// SetDate sets the Date header, as expires_in does.
+func (c *Context) SetDate() { c.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat)) }

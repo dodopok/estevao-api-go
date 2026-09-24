@@ -24,5 +24,18 @@ func Endpoints() map[string]web.HandlerFunc {
 		"api/v1/daily_office#show":            DailyOfficeShow,
 		"api/v1/daily_office#family_rite":     DailyOfficeFamilyRite,
 		"api/v1/daily_office#preferences":     DailyOfficePreferences,
+		"api/v1/users#show":                   UsersShow,
+		"api/v1/users#update_profile":         UsersUpdateProfile,
+		"api/v1/users#upload_avatar":          UsersUploadAvatar,
+		"api/v1/users#delete_avatar":          UsersDeleteAvatar,
+		"api/v1/users#update_preferences":     UsersUpdatePreferences,
+		"api/v1/users#completions":            UsersCompletions,
+		"api/v1/users#save_fcm_token":         UsersSaveFCMToken,
+		"api/v1/users#delete_fcm_token":       UsersDeleteFCMToken,
+		"api/v1/users#update_timezone":        UsersUpdateTimezone,
+		"api/v1/users#destroy":                UsersDestroy,
+		"api/v1/users/wrapped#show":           UsersWrappedShow,
+		"api/v1/onboarding#create":            OnboardingCreate,
+		"api/v1/onboarding#show":              OnboardingShow,
 	}
 }
