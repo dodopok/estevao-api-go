@@ -648,7 +648,9 @@ func (b *loc2015) midday() []*Section {
 			Many(func() []*Section { return b.familyReadingFromPref("family_midday_reading", "family_midday_reading") }),
 			One(func() *Section { return b.familyOptionalCollect("family_midday_collect") }),
 			One(b.lordsPrayerSimple),
-			One(func() *Section { return b.textSection("family_midday_collect", "Oração Conclusiva", "prayer", "leader") }),
+			One(func() *Section {
+				return b.textSection("family_midday_collect", "Oração Conclusiva", "prayer", "leader")
+			}),
 		)
 	}
 	return Pipeline(One(b.mdOpening), One(b.mdInvitation), One(b.mdPsalmsTitle), Many(b.mdPsalms),
@@ -733,7 +735,9 @@ func (b *loc2015) mdDismissal() *Section {
 
 func (b *loc2015) lateEvening() []*Section {
 	return Pipeline(
-		One(func() *Section { return b.textSection("family_late_evening_opening", "Ao Anoitecer", "welcome", "leader") }),
+		One(func() *Section {
+			return b.textSection("family_late_evening_opening", "Ao Anoitecer", "welcome", "leader")
+		}),
 		One(func() *Section {
 			return b.familyPsalmFromPref("family_late_evening_psalm", "family_late_evening_psalm_138", "Confitebor Tibi (Salmo 138)")
 		}),
@@ -742,7 +746,9 @@ func (b *loc2015) lateEvening() []*Section {
 		}),
 		One(func() *Section { return b.familyOptionalCollect("family_late_evening_collect") }),
 		One(b.lordsPrayerSimple),
-		One(func() *Section { return b.textSection("family_late_evening_collect", "Oração Conclusiva", "collect", "leader") }),
+		One(func() *Section {
+			return b.textSection("family_late_evening_collect", "Oração Conclusiva", "collect", "leader")
+		}),
 	)
 }
 
@@ -775,7 +781,9 @@ func (b *loc2015) compline() []*Section {
 			One(func() *Section {
 				return b.familyPsalmFromPref("family_compline_psalm", "family_compline_psalm_91", "Qui Habitat (Salmo 91)")
 			}),
-			Many(func() []*Section { return b.familyReadingFromPref("family_compline_reading", "family_compline_reading") }),
+			Many(func() []*Section {
+				return b.familyReadingFromPref("family_compline_reading", "family_compline_reading")
+			}),
 			One(func() *Section { return b.familyOptionalCollect("family_compline_daily_collect") }),
 			One(b.lordsPrayerSimple),
 			One(b.cFamilyFixedCollect),

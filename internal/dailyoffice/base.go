@@ -18,14 +18,14 @@ import (
 // Hooks are the BaseBuilder methods a book overrides. Nil entries use the
 // base behavior.
 type Hooks struct {
-	LoadReadings         func() *reading.Selection
-	CollectLanguageStyle func() string
+	LoadReadings          func() *reading.Selection
+	CollectLanguageStyle  func() string
 	ReadingServiceVariant func() string
-	ReadingServiceType   func() (string, bool) // (value, handled)
-	ReadingService       func() *reading.Resolver
-	FetchText            func(slug string) *store.LiturgicalText
-	BuildSection         func(name any, slug string, lines []*Line, meta *rb.Map) *Section
-	LineItem             func(text any, typ, slug, reference string) *Line
+	ReadingServiceType    func() (string, bool) // (value, handled)
+	ReadingService        func() *reading.Resolver
+	FetchText             func(slug string) *store.LiturgicalText
+	BuildSection          func(name any, slug string, lines []*Line, meta *rb.Map) *Section
+	LineItem              func(text any, typ, slug, reference string) *Line
 }
 
 // Base ports BaseBuilder + SharedHelpers + LocBase and the concerns every

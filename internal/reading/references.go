@@ -578,7 +578,6 @@ func (b *loc1662Builder) revised1922WeekReferences() []string {
 
 type loc1962Builder struct{ *baseBuilder }
 
-
 func (b *loc1962Builder) FixedDateReferences() []string {
 	refs := b.baseBuilder.FixedDateReferences()
 	refs = append(refs, liturgical.Loc1962FixedDateReferences(b.date.Month(), b.date.Day())...)

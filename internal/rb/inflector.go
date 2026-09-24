@@ -13,7 +13,9 @@ func Humanize(s string) string {
 	if strings.HasSuffix(s, "_id") {
 		result = strings.TrimSuffix(result, " id")
 	}
-	isAlnum := func(r rune) bool { return unicode.IsLetter(r) || unicode.IsMark(r) || unicode.Is(unicode.Nl, r) || (r >= '0' && r <= '9') }
+	isAlnum := func(r rune) bool {
+		return unicode.IsLetter(r) || unicode.IsMark(r) || unicode.Is(unicode.Nl, r) || (r >= '0' && r <= '9')
+	}
 	rs := []rune(result)
 	for i, r := range rs {
 		if isAlnum(r) {
