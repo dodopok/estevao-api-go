@@ -70,7 +70,7 @@ type Rubrics struct{ Pre, Post, Response, End string }
 
 // ReadingModule ports build_reading_module.
 func (b *Base) ReadingModule(typ, announcementSlug string, rubrics Rubrics, readingKey, moduleName string, includeReferenceHeading bool) *Section {
-	r := b.Readings.Slot(readingKey)
+	r := b.ReadingFor(readingKey)
 	meta := rb.NewMap()
 	if r != nil {
 		meta.Set("reference", r.Reference)
@@ -99,7 +99,7 @@ func ptrVal(p *string) any {
 // ReadingExtras ports reading_module_extras; altLines renders the
 // alternative (nil uses format_bible_content).
 func (b *Base) ReadingExtras(readingKey string, altLines func(*reading.Passage) []*Line) *rb.Map {
-	r := b.Readings.Slot(readingKey)
+	r := b.ReadingFor(readingKey)
 	extras := rb.NewMap()
 	if r == nil {
 		return extras

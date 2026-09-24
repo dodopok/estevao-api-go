@@ -26,6 +26,7 @@ type Hooks struct {
 	FetchText             func(slug string) *store.LiturgicalText
 	BuildSection          func(name any, slug string, lines []*Line, meta *rb.Map) *Section
 	LineItem              func(text any, typ, slug, reference string) *Line
+	ReadingFor            func(readingKey string) *reading.Passage
 }
 
 // Base ports BaseBuilder + SharedHelpers + LocBase and the concerns every
@@ -803,4 +804,12 @@ func NameWithRef(t *store.LiturgicalText, fallback string) string {
 		return fallback
 	}
 	return s
+}
+
+// ReadingFor ports reading_for(reading_key) (a book may route a slot).
+func (b *Base) ReadingFor(key string) *reading.Passage {
+	if b.H.ReadingFor != nil {
+		return b.H.ReadingFor(key)
+	}
+	return b.Readings.Slot(key)
 }
