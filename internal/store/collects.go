@@ -127,6 +127,7 @@ ORDER BY "liturgical_texts"."id" ASC LIMIT 1`, pb.ID, slug)
 type textsEntry struct {
 	version time.Time
 	value   map[string]*LiturgicalText
+	ordered []*LiturgicalText
 }
 
 var (
@@ -137,13 +138,24 @@ var (
 // LiturgicalTextsFor ports LiturgicalText.texts_cache_for (slug index; a
 // later duplicate slug wins, as in each_with_object).
 func LiturgicalTextsFor(ctx context.Context, pb *PrayerBook) map[string]*LiturgicalText {
+	return liturgicalTexts(ctx, pb).value
+}
+
+// LiturgicalTextsOrdered is texts_cache_for(...).values: one text per slug,
+// in the order the slug first appeared in the table scan (a Ruby Hash keeps
+// first-insertion order while a later duplicate replaces the value).
+func LiturgicalTextsOrdered(ctx context.Context, pb *PrayerBook) []*LiturgicalText {
+	return liturgicalTexts(ctx, pb).ordered
+}
+
+func liturgicalTexts(ctx context.Context, pb *PrayerBook) textsEntry {
 	if pb == nil {
-		return map[string]*LiturgicalText{}
+		return textsEntry{value: map[string]*LiturgicalText{}}
 	}
 	textsMu.Lock()
 	if e, ok := textsCache[pb.ID]; ok && e.version.Equal(pb.UpdatedAt) {
 		textsMu.Unlock()
-		return e.value
+		return e
 	}
 	textsMu.Unlock()
 	rows, err := db.Q().Query(ctx, `SELECT `+liturgicalTextColumns+` FROM "liturgical_texts" WHERE "liturgical_texts"."prayer_book_id" = $1`, pb.ID)
@@ -152,20 +164,29 @@ func LiturgicalTextsFor(ctx context.Context, pb *PrayerBook) map[string]*Liturgi
 	}
 	defer rows.Close()
 	out := map[string]*LiturgicalText{}
+	var slugs []string
 	for rows.Next() {
 		t, err := scanLiturgicalText(rows)
 		if err != nil {
 			panic(err)
+		}
+		if _, seen := out[t.Slug]; !seen {
+			slugs = append(slugs, t.Slug)
 		}
 		out[t.Slug] = t
 	}
 	if err := rows.Err(); err != nil {
 		panic(err)
 	}
+	ordered := make([]*LiturgicalText, len(slugs))
+	for i, s := range slugs {
+		ordered[i] = out[s]
+	}
+	e := textsEntry{pb.UpdatedAt, out, ordered}
 	textsMu.Lock()
-	textsCache[pb.ID] = textsEntry{pb.UpdatedAt, out}
+	textsCache[pb.ID] = e
 	textsMu.Unlock()
-	return out
+	return e
 }
 
 // CelebrationNameByID ports Celebration.where(id:).pick(:name).
