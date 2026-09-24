@@ -101,7 +101,8 @@ func lookup(locale, key string) (any, bool) {
 func Lookup(locale, key string) (any, bool) {
 	once.Do(load)
 	for _, l := range Fallbacks(locale) {
-		if v, ok := lookup(l, key); ok {
+		// A nil entry (YAML ~) counts as missing, as in the I18n backend.
+		if v, ok := lookup(l, key); ok && v != nil {
 			return v, true
 		}
 	}
