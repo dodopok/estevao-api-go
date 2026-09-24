@@ -69,11 +69,19 @@ func PrayerBookByCode(ctx context.Context, code string) (*PrayerBook, error) {
 
 // PrayerBooksWhere loads prayer books with the default scope order.
 func PrayerBooksWhere(ctx context.Context, where string, args ...any) ([]*PrayerBook, error) {
+	return PrayerBooksOrdered(ctx, where, "", args...)
+}
+
+// PrayerBooksOrdered adds orders after the default scope's "order" ASC.
+func PrayerBooksOrdered(ctx context.Context, where, extraOrder string, args ...any) ([]*PrayerBook, error) {
 	q := `SELECT ` + prayerBookColumns + ` FROM prayer_books`
 	if where != "" {
 		q += " WHERE " + where
 	}
 	q += ` ORDER BY "order" ASC`
+	if extraOrder != "" {
+		q += ", " + extraOrder
+	}
 	rows, err := db.Q().Query(ctx, q, args...)
 	if err != nil {
 		return nil, err

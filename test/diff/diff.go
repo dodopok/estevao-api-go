@@ -116,6 +116,11 @@ func Compare(a, b *Result) []string {
 		if (k == "Etag" || k == "Content-Length") && (a.Changed || b.Changed) {
 			continue
 		}
+		// Accepted deviation (docs/EQUIVALENCE.md): Go's net/http always
+		// drops Content-Length on 304; Rails' head :not_modified sends "0".
+		if k == "Content-Length" && a.Status == 304 && b.Status == 304 {
+			continue
+		}
 		av, bv := strings.Join(a.Header.Values(k), ", "), strings.Join(b.Header.Values(k), ", ")
 		if av != bv {
 			out = append(out, fmt.Sprintf("header %s rails=%q go=%q", k, av, bv))

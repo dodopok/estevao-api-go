@@ -66,6 +66,9 @@ func (c *Context) RenderJSON(status int, v any) {
 func (c *Context) HeadStatus(status int) {
 	c.Status = status
 	c.Body = nil
+	// ActionController#head leaves an empty body, which Rack reports as
+	// Content-Length: 0 even on 204/304 (unlike Rack::ConditionalGet's 304).
+	c.Header.Set("Content-Length", "0")
 	c.written = true
 }
 

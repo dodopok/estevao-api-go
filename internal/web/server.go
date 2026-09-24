@@ -116,13 +116,20 @@ func writeResponse(w http.ResponseWriter, r *http.Request, resp *Response) {
 	for k, v := range resp.Header {
 		h[k] = v
 	}
+	// Puma sends no Date header; Rails adds one only through expires_in.
+	// A nil entry stops net/http from adding its own.
+	if _, ok := h["Date"]; !ok {
+		h["Date"] = nil
+	}
 	if r.Method == http.MethodHead {
 		h.Set("Content-Length", "0")
 		w.WriteHeader(resp.Status)
 		return
 	}
 	if resp.Status == 204 || resp.Status == 304 || (resp.Status >= 100 && resp.Status < 200) {
-		h.Del("Content-Length")
+		if h.Get("Content-Length") != "0" {
+			h.Del("Content-Length")
+		}
 		w.WriteHeader(resp.Status)
 		return
 	}
