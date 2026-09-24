@@ -55,6 +55,17 @@ func init() {
 			return b
 		})
 	}
+	// Loc1984Wales::{Morning,Evening} subclass the English 1662 offices.
+	for _, code := range []string{"loc_1984_cy", "loc_1984_en"} {
+		Register(code, func(ctx context.Context, c *Context) Builder {
+			if c.OfficeType != "morning" && c.OfficeType != "evening" {
+				UnknownOfficeType(c.OfficeType)
+			}
+			b := &loc1662{profile: loc1662Profiles["loc_1662_en"], wales: true}
+			b.Init(ctx, c)
+			return b
+		})
+	}
 }
 
 // loc1662 ports DailyOffice::Builders::Loc1662::{Morning,Evening} and the
@@ -62,9 +73,16 @@ func init() {
 type loc1662 struct {
 	Base
 	profile loc1662Profile
+	wales   bool
 }
 
 func (b *loc1662) Call() *rb.Map {
+	if b.wales {
+		if b.OfficeType == "morning" {
+			return b.Render(b.walesMorning())
+		}
+		return b.Render(b.walesEvening())
+	}
 	if b.OfficeType == "morning" {
 		return b.Render(b.morning())
 	}
@@ -166,7 +184,12 @@ func (b *Base) celebrationField(key string) any {
 
 func (b *loc1662) openingSentence(prefix string) *Section {
 	lines := b.plain(nil, prefix+"_opening_sentence_rubric", "rubric")
-	key := Or(b.ResolveRange(prefix+"_opening_sentence", 1, 11), 1)
+	var key any
+	if b.wales {
+		key = Or(b.ResolveRange("opening_sentence", 1, 10), 1)
+	} else {
+		key = Or(b.ResolveRange(prefix+"_opening_sentence", 1, 11), 1)
+	}
 	if s := b.T(prefix + "_opening_sentence_" + rubyInterp(key)); s != nil {
 		lines = append(lines, b.I(s.Content, "text"))
 		if s.Reference != nil {
@@ -176,7 +199,18 @@ func (b *loc1662) openingSentence(prefix string) *Section {
 	return b.Section("", "opening_sentence", lines, nil)
 }
 
+func (b *loc1662) omitIntroduction() bool {
+	if !b.wales {
+		return false
+	}
+	v, ok := b.ResolveOptions("introduction", []string{"include", "omit"}).(string)
+	return ok && v == "omit"
+}
+
 func (b *loc1662) exhortation(prefix string) *Section {
+	if b.omitIntroduction() {
+		return nil
+	}
 	t := b.T(prefix + "_exhortation")
 	if t == nil {
 		return nil
@@ -185,12 +219,18 @@ func (b *loc1662) exhortation(prefix string) *Section {
 }
 
 func (b *loc1662) confession(prefix string) *Section {
+	if b.omitIntroduction() {
+		return nil
+	}
 	lines := b.plain(nil, prefix+"_confession_rubric", "rubric")
 	lines = b.plain(lines, prefix+"_confession", "text")
 	return b.Section("", "confession", lines, nil)
 }
 
 func (b *loc1662) absolution(prefix string) *Section {
+	if b.omitIntroduction() {
+		return nil
+	}
 	lines := b.plain(nil, prefix+"_absolution_rubric", "rubric")
 	lines = b.plain(lines, prefix+"_absolution", "text")
 	lines = b.plain(lines, prefix+"_absolution_response_rubric", "rubric")
@@ -231,7 +271,7 @@ func (b *loc1662) psalms(gloriaPrefix string) *Section {
 }
 
 func (b *loc1662) reading(typ, rubric string) *Section {
-	return b.ReadingModule(typ, "morning_reading_announcement_rubric", Rubrics{Pre: rubric}, typ+"_reading", "", false)
+	return b.ReadingModule(typ, "morning_reading_announcement_rubric", Rubrics{Pre: rubric}, typ+"_reading", "", b.wales)
 }
 
 func (b *loc1662) canticle(v any, slug string) *Section {
@@ -422,4 +462,89 @@ func (b *loc1662) evening() []*Section {
 		}),
 		One(b.theGrace),
 	)
+}
+
+// --- Loc1984Wales ------------------------------------------------------------------------
+
+func (b *loc1662) walesMorning() []*Section {
+	const p = "morning"
+	return Pipeline(
+		One(func() *Section { return b.openingSentence(p) }),
+		One(func() *Section { return b.exhortation(p) }),
+		One(func() *Section { return b.confession(p) }),
+		One(func() *Section { return b.absolution(p) }),
+		One(func() *Section { return b.versicles(p) }),
+		One(func() *Section { return b.canticle("morning_venite", "invitatory_canticle") }),
+		One(func() *Section { return b.psalms("morning_psalms") }),
+		One(func() *Section { return b.reading("first", "morning_first_reading_rubric") }),
+		One(func() *Section { return b.canticle("morning_benedictus", "first_canticle") }),
+		One(func() *Section { return b.reading("second", "morning_second_reading_rubric") }),
+		One(func() *Section {
+			if v, ok := b.ResolveOptions("morning_te_deum", []string{"include", "omit"}).(string); ok && v == "omit" {
+				return nil
+			}
+			return b.canticle("morning_te_deum", "second_canticle")
+		}),
+		One(b.mCreed),
+		One(func() *Section { return b.prayers(p) }),
+		One(func() *Section { return b.lordsPrayerRepeated(p) }),
+		One(func() *Section { return b.suffrages(p) }),
+		One(b.walesCollectOfTheDay),
+		One(b.walesFixedCollects),
+		One(b.theGrace),
+	)
+}
+
+func (b *loc1662) walesEvening() []*Section {
+	const p = "evening"
+	return Pipeline(
+		One(func() *Section { return b.openingSentence(p) }),
+		One(func() *Section { return b.exhortation(p) }),
+		One(func() *Section { return b.confession(p) }),
+		One(func() *Section { return b.absolution(p) }),
+		One(func() *Section { return b.versicles(p) }),
+		One(func() *Section { return b.psalms(p) }),
+		One(func() *Section { return b.reading("first", b.slug("evening_first_reading_rubric")) }),
+		One(func() *Section {
+			return b.canticleSection("evening_first_canticle", "first_canticle", "evening_magnificat", "evening_cantate_domino")
+		}),
+		One(func() *Section { return b.reading("second", b.slug("evening_second_reading_rubric")) }),
+		One(func() *Section {
+			return b.canticleSection("evening_second_canticle", "second_canticle", "evening_nunc_dimittis", "evening_deus_misereatur")
+		}),
+		One(func() *Section { return b.creed(p) }),
+		One(func() *Section { return b.prayers(p) }),
+		One(func() *Section { return b.lordsPrayerRepeated(p) }),
+		One(func() *Section { return b.suffrages(p) }),
+		One(b.walesCollectOfTheDay),
+		One(b.walesFixedCollects),
+		One(b.theGrace),
+	)
+}
+
+// contentS ports fetch_liturgical_text(slug)&.content.to_s.
+func (b *Base) contentS(slug string) string {
+	if t := b.T(slug); t != nil {
+		return t.Content
+	}
+	return ""
+}
+
+func (b *loc1662) walesCollectOfTheDay() *Section {
+	return b.Section(b.contentS("label_collect_of_the_day"), "collect_of_the_day", b.CollectLines(b.Collects), nil)
+}
+
+func (b *loc1662) walesFixedCollects() *Section {
+	var lines []*Line
+	for _, kind := range []string{"peace", "grace", "perils"} {
+		t := b.T(b.OfficeType + "_collect_" + kind)
+		if t == nil {
+			continue
+		}
+		if t.Title != nil {
+			lines = append(lines, b.I(*t.Title, "heading"))
+		}
+		lines = append(lines, b.I(t.Content, "text"))
+	}
+	return b.Section(b.contentS("label_fixed_collects"), "fixed_collects", lines, nil)
 }
