@@ -1,6 +1,7 @@
 package rx
 
 import (
+	"github.com/dlclark/regexp2"
 	"reflect"
 	"testing"
 )
@@ -50,5 +51,13 @@ func TestWordBoundaryIsUnicode(t *testing.T) {
 	}
 	if MustCompile(`\w`).MatchString("é") {
 		t.Error(`\w matched "é"`)
+	}
+}
+
+// A non-positive MatchTimeout is an expired deadline in regexp2; matches
+// then fail at random under load. Patterns must never time out.
+func TestNoMatchDeadline(t *testing.T) {
+	if got := MustCompile(`a+b`).re.MatchTimeout; got != regexp2.DefaultMatchTimeout {
+		t.Fatalf("MatchTimeout = %v", got)
 	}
 }

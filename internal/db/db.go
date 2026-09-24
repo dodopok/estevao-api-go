@@ -26,6 +26,12 @@ func Open(ctx context.Context, dsn string, maxConns int32) error {
 		cfg.MaxConns = maxConns
 	}
 	cfg.MaxConnIdleTime = 300 * time.Second
+	// Unnamed statements are planned with their actual parameters on every
+	// execution (a custom plan), as ActiveRecord's unprepared queries are.
+	// Named cached statements switch to a generic plan after five runs, which
+	// can break ties differently in ORDER BY ... LIMIT queries whose order is
+	// not total - and those ties are observable in responses.
+	cfg.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheDescribe
 	cfg.ConnConfig.ConnectTimeout = 5 * time.Second
 	// Production safeguards mirrored from config/database.yml.
 	cfg.ConnConfig.RuntimeParams["statement_timeout"] = "30000"

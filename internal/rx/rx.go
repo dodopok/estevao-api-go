@@ -39,7 +39,9 @@ func MustCompile(src string, flags ...string) *Regexp {
 		opts |= regexp2.IgnorePatternWhitespace
 	}
 	re := regexp2.MustCompile(translate(src), opts)
-	re.MatchTimeout = -1
+	// DefaultMatchTimeout ("forever") disables deadline checks entirely; a
+	// non-positive value would be an already-expired deadline.
+	re.MatchTimeout = regexp2.DefaultMatchTimeout
 	r := &Regexp{re: re, src: src}
 	cache.Store(key, r)
 	return r
@@ -209,6 +211,13 @@ func (m *Match) PostMatch() string { return string(m.input[m.End():]) }
 // GroupCount is the number of capture groups.
 func (m *Match) GroupCount() int { return m.m.GroupCount() - 1 }
 
+// check turns a matcher error into a panic: an error is never "no match".
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 // Find returns the first match (Ruby =~ / match).
 func (r *Regexp) Find(s string) *Match { return r.FindFrom(s, 0) }
 
@@ -216,7 +225,8 @@ func (r *Regexp) Find(s string) *Match { return r.FindFrom(s, 0) }
 func (r *Regexp) FindFrom(s string, pos int) *Match {
 	runes := []rune(s)
 	m, err := r.re.FindRunesMatchStartingAt(runes, pos)
-	if err != nil || m == nil {
+	check(err)
+	if m == nil {
 		return nil
 	}
 	return &Match{m: m, input: runes}
@@ -225,17 +235,20 @@ func (r *Regexp) FindFrom(s string, pos int) *Match {
 // MatchString mirrors String#match?.
 func (r *Regexp) MatchString(s string) bool {
 	ok, err := r.re.MatchString(s)
-	return err == nil && ok
+	check(err)
+	return ok
 }
 
 // FindAll returns all non-overlapping matches (String#scan).
 func (r *Regexp) FindAll(s string) []*Match {
 	runes := []rune(s)
 	var out []*Match
-	m, _ := r.re.FindRunesMatch(runes)
+	m, err := r.re.FindRunesMatch(runes)
+	check(err)
 	for m != nil {
 		out = append(out, &Match{m: m, input: runes})
-		m, _ = r.re.FindNextMatch(m)
+		m, err = r.re.FindNextMatch(m)
+		check(err)
 	}
 	return out
 }
@@ -361,7 +374,8 @@ func (r *Regexp) Split(s string, limit int) []string {
 			break
 		}
 		m, err := r.re.FindRunesMatchStartingAt(runes, pos)
-		if err != nil || m == nil {
+		check(err)
+		if m == nil {
 			break
 		}
 		mb, me := m.Index, m.Index+m.Length
