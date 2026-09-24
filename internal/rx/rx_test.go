@@ -36,3 +36,19 @@ func TestRubySemantics(t *testing.T) {
 		t.Errorf("sub: %s", got)
 	}
 }
+
+// Ruby's \b treats accented letters as word characters (\w does not).
+func TestWordBoundaryIsUnicode(t *testing.T) {
+	if MustCompile(`x\b`).MatchString("xé") {
+		t.Error(`x\b matched "xé"`)
+	}
+	if got := MustCompile(`\bà\(ao\)`, "i").Index(" à(ao)"); got != 1 {
+		t.Errorf("index = %d, want 1", got)
+	}
+	if MustCompile(`\bà\(ao\)`, "i").MatchString("dà(ao)") {
+		t.Error("matched inside a word")
+	}
+	if MustCompile(`\w`).MatchString("é") {
+		t.Error(`\w matched "é"`)
+	}
+}

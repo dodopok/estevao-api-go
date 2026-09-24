@@ -21,20 +21,55 @@ func Transliterate(s string) string {
 }
 
 // Parameterize mirrors ActiveSupport's String#parameterize (separator "-").
-func Parameterize(s string) string {
+func Parameterize(s string) string { return ParameterizeSep(s, "-") }
+
+// ParameterizeSep ports String#parameterize(separator: sep) for a non-empty
+// separator.
+func ParameterizeSep(s, sep string) string {
 	t := Transliterate(s)
 	var b strings.Builder
+	inRun := false
 	for _, r := range t {
 		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
 			b.WriteRune(r)
-		} else {
-			b.WriteByte('-')
+			inRun = false
+		} else if !inRun {
+			b.WriteString(sep)
+			inRun = true
 		}
 	}
 	out := b.String()
-	for strings.Contains(out, "--") {
-		out = strings.ReplaceAll(out, "--", "-")
+	dup := sep + sep
+	if strings.Contains(out, dup) {
+		var c strings.Builder
+		for i := 0; i < len(out); {
+			if strings.HasPrefix(out[i:], sep) {
+				c.WriteString(sep)
+				for strings.HasPrefix(out[i:], sep) {
+					i += len(sep)
+				}
+				continue
+			}
+			c.WriteByte(out[i])
+			i++
+		}
+		out = c.String()
 	}
-	out = strings.Trim(out, "-")
+	if sep == "-" {
+		out = strings.TrimPrefix(out, "-")
+		out = strings.TrimSuffix(out, "-")
+	} else {
+		// /^-?sep|sep-?$/
+		if strings.HasPrefix(out, "-"+sep) {
+			out = out[1+len(sep):]
+		} else if strings.HasPrefix(out, sep) {
+			out = out[len(sep):]
+		}
+		if strings.HasSuffix(out, sep+"-") {
+			out = out[:len(out)-len(sep)-1]
+		} else if strings.HasSuffix(out, sep) {
+			out = out[:len(out)-len(sep)]
+		}
+	}
 	return strings.ToLower(out)
 }

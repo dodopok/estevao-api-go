@@ -1,6 +1,10 @@
 package web
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/dodopok/estevao-api-go/internal/rb"
+)
 
 // DomainError ports DomainError and its subclasses (see app/errors).
 type DomainError struct {
@@ -121,30 +125,7 @@ func RecordNotFound(message string) {
 
 // Humanize mirrors ActiveSupport's String#humanize for codes like
 // "INVALID_DATE" => "Invalid date".
-func Humanize(s string) string {
-	out := []rune{}
-	for i, r := range s {
-		if r == '_' {
-			r = ' '
-		}
-		if i == 0 {
-			if r >= 'a' && r <= 'z' {
-				r -= 32
-			}
-		} else if r >= 'A' && r <= 'Z' {
-			r += 32
-		}
-		out = append(out, r)
-	}
-	str := string(out)
-	for len(str) > 0 && str[0] == ' ' {
-		str = str[1:]
-	}
-	if len(str) > 0 && str[0] >= 'a' && str[0] <= 'z' {
-		str = string(str[0]-32) + str[1:]
-	}
-	return str
-}
+func Humanize(s string) string { return rb.Humanize(s) }
 
 // exceptionStatus is the status ShowExceptions answers for errors that
 // escape the controller.

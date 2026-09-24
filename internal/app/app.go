@@ -2,16 +2,14 @@
 package app
 
 import (
-	"context"
 	"log/slog"
 	"strings"
 
 	"github.com/dodopok/estevao-api-go/internal/api/v1"
 	"github.com/dodopok/estevao-api-go/internal/config"
-	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/ratelimit"
-	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/web"
+	"github.com/dodopok/estevao-api-go/internal/wiring"
 )
 
 // Endpoints maps Rails "controller#action" names to Go handlers.
@@ -36,18 +34,7 @@ func Endpoints() map[string]web.Endpoint {
 
 // NewServer builds the HTTP handler.
 func NewServer(logger *slog.Logger, publicDir string) *web.Server {
-	liturgical.LoadCelebrations = func(code string) *liturgical.BookCelebrations {
-		ctx := context.Background()
-		pb, err := store.PrayerBookByCode(ctx, code)
-		if err != nil {
-			panic(err)
-		}
-		bc, err := store.CelebrationsForBook(ctx, pb)
-		if err != nil {
-			panic(err)
-		}
-		return bc
-	}
+	wiring.Install()
 	var origins []string
 	for _, o := range strings.Split(config.Get("CORS_ALLOWED_ORIGINS"), ",") {
 		if o = strings.TrimSpace(o); o != "" {

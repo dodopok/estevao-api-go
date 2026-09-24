@@ -51,8 +51,46 @@ func (m *Map) Set(k string, v any) *Map {
 	if _, ok := m.vals[k]; !ok {
 		m.keys = append(m.keys, k)
 	}
-	m.vals[k] = v
+	m.vals[k] = Deref(v)
 	return m
+}
+
+// Deref turns pointers to scalars into their value (nil pointer => nil), so
+// maps hold Ruby-like values regardless of how columns were scanned.
+func Deref(v any) any {
+	switch x := v.(type) {
+	case *string:
+		if x == nil {
+			return nil
+		}
+		return *x
+	case *int:
+		if x == nil {
+			return nil
+		}
+		return *x
+	case *int64:
+		if x == nil {
+			return nil
+		}
+		return *x
+	case *int32:
+		if x == nil {
+			return nil
+		}
+		return *x
+	case *bool:
+		if x == nil {
+			return nil
+		}
+		return *x
+	case *float64:
+		if x == nil {
+			return nil
+		}
+		return *x
+	}
+	return v
 }
 
 // Get returns the value for k (nil when absent).

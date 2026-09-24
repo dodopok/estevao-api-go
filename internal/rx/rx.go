@@ -80,6 +80,8 @@ var posixClasses = map[string]string{
 }
 
 // translate rewrites Ruby-specific escapes into .NET equivalents.
+const unicodeWord = `[\p{L}\p{M}\p{Nd}\p{Pc}]`
+
 func translate(src string) string {
 	var b strings.Builder
 	inClass := 0
@@ -147,9 +149,11 @@ func translate(src string) string {
 			case 'H':
 				b.WriteString("[^0-9a-fA-F]")
 			case 'b':
-				b.WriteString(`(?:(?<=[a-zA-Z0-9_])(?![a-zA-Z0-9_])|(?<![a-zA-Z0-9_])(?=[a-zA-Z0-9_]))`)
+				// Onigmo's \b uses Unicode word characters even though \w
+				// is ASCII-only in Ruby.
+				b.WriteString(`(?:(?<=` + unicodeWord + `)(?!` + unicodeWord + `)|(?<!` + unicodeWord + `)(?=` + unicodeWord + `))`)
 			case 'B':
-				b.WriteString(`(?:(?<=[a-zA-Z0-9_])(?=[a-zA-Z0-9_])|(?<![a-zA-Z0-9_])(?![a-zA-Z0-9_]))`)
+				b.WriteString(`(?:(?<=` + unicodeWord + `)(?=` + unicodeWord + `)|(?<!` + unicodeWord + `)(?!` + unicodeWord + `))`)
 			default:
 				b.WriteRune('\\')
 				b.WriteRune(n)

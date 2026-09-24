@@ -672,3 +672,8 @@ func RuleCodes() []string {
 	}
 	return out
 }
+
+// Loc1962FixedDateReferences exposes LOC_1962_FIXED_DATE_REFERENCES.fetch([m, d], []).
+func Loc1962FixedDateReferences(month, day int) []string {
+	return append([]string(nil), loc1962FixedDateReferences[MD{month, day}]...)
+}
