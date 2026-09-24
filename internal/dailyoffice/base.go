@@ -156,9 +156,19 @@ func (b *Base) NewReadingService(serviceType string) *reading.Resolver {
 	return reading.For(b.Ctx, b.Date, reading.Options{
 		PrayerBookCode: b.C.Code, Calendar: b.Calendar(), DayContext: b.DayContext, Translation: translation,
 		PsalmTranslation: b.SelectedPsalmTranslation(), ReadingType: b.PrefString("reading_type"),
-		ServiceType: serviceType, ServiceVariant: variant, PsalmTable: prefs.PsalmCycle(b.Prefs, b.OfficeType),
+		ReadingTypeRaw: b.ReadingTypeRaw(), ServiceType: serviceType, ServiceVariant: variant, PsalmTable: prefs.PsalmCycle(b.Prefs, b.OfficeType),
 		LoadContent: true,
 	})
+}
+
+// ReadingTypeRaw is preferences[:reading_type] when it is a list or a hash,
+// which Rails hands to Reading::Query unchanged (see reading.Options).
+func (b *Base) ReadingTypeRaw() any {
+	switch v := b.Pref("reading_type").(type) {
+	case []any, []string, map[string]any, *rb.Map:
+		return v
+	}
+	return nil
 }
 
 // PrefString is a preference as a string, "" for nil.
@@ -638,20 +648,7 @@ func (b *Base) RiteChoice(key string, rites []string) string {
 }
 
 // rubyClassName names the Ruby class of a scalar preference value.
-func rubyClassName(v any) string {
-	switch x := v.(type) {
-	case bool:
-		if x {
-			return "TrueClass"
-		}
-		return "FalseClass"
-	case int:
-		return "Integer"
-	case float64:
-		return "Float"
-	}
-	return "Object"
-}
+func rubyClassName(v any) string { return rb.ClassName(v) }
 
 // Season helpers --------------------------------------------------------------------
 

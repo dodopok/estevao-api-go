@@ -108,7 +108,7 @@ func (r *Resolver) weeklyQuery2027() *Query {
 	if r.referenceCycle == r.Cycle {
 		return r.Query()
 	}
-	return &Query{PrayerBookID: r.prayerBookID(), Cycle: r.referenceCycle, Date: r.Date, ReadingType: r.ReadingType, ServiceType: r.ServiceType}
+	return &Query{PrayerBookID: r.prayerBookID(), Cycle: r.referenceCycle, Date: r.Date, ReadingType: r.ReadingType, ReadingTypeRaw: r.readingTypeRaw, ServiceType: r.ServiceType}
 }
 
 // --- Loc1984WalesService ----------------------------------------------------------

@@ -101,7 +101,7 @@ func (b *dwdo) translation() string {
 func (b *dwdo) service(d civil.Date, cal *liturgical.Calendar, serviceType string) *reading.Resolver {
 	return reading.For(b.Ctx, d, reading.Options{
 		PrayerBookCode: b.PrefS("prayer_book_code"), Calendar: cal, Translation: b.translation(),
-		PsalmTranslation: b.PrefString("psalm_translation"), ReadingType: b.PrefString("reading_type"),
+		PsalmTranslation: b.PrefString("psalm_translation"), ReadingType: b.PrefString("reading_type"), ReadingTypeRaw: b.ReadingTypeRaw(),
 		ServiceType: serviceType, LoadContent: true,
 	})
 }

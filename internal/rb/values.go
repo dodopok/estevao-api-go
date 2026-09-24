@@ -43,6 +43,8 @@ func Blank(v any) bool {
 		return len(x) == 0
 	case []string:
 		return len(x) == 0
+	case map[string]any:
+		return len(x) == 0
 	case *Map:
 		return x == nil || x.Len() == 0
 	}
@@ -315,4 +317,28 @@ func StripAll(in []string) []string {
 		out[i] = Strip(s)
 	}
 	return out
+}
+
+// ClassName is the Ruby class name of a decoded JSON value (v.class.name).
+func ClassName(v any) string {
+	switch x := v.(type) {
+	case nil:
+		return "NilClass"
+	case bool:
+		if x {
+			return "TrueClass"
+		}
+		return "FalseClass"
+	case int, int64:
+		return "Integer"
+	case float64:
+		return "Float"
+	case string:
+		return "String"
+	case []any, []string:
+		return "Array"
+	case map[string]any, *Map:
+		return "Hash"
+	}
+	return "Object"
 }

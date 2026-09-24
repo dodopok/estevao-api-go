@@ -38,7 +38,7 @@ func init() {
 				}
 				b.rs = reading.For(b.Ctx, b.Date, reading.Options{
 					PrayerBookCode: b.C.Code, Calendar: b.Calendar(), DayContext: b.DayContext, Translation: translation,
-					PsalmTranslation: b.SelectedPsalmTranslation(), ReadingType: b.PrefString("reading_type"),
+					PsalmTranslation: b.SelectedPsalmTranslation(), ReadingType: b.PrefString("reading_type"), ReadingTypeRaw: b.ReadingTypeRaw(),
 					ServiceType: b.ReadingServiceType(), ServiceVariant: variant, PsalmTable: b.PrefString("weekday_psalm_table"),
 					LoadContent: true,
 				})

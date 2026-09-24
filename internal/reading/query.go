@@ -7,6 +7,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/civil"
 	"github.com/dodopok/estevao-api-go/internal/db"
+	"github.com/dodopok/estevao-api-go/internal/rb"
 )
 
 // Record is a lectionary_readings row. Key columns map NULL to "" (none of
@@ -186,6 +187,7 @@ type Query struct {
 	Cycle                string
 	Date                 civil.Date
 	ReadingType          string
+	ReadingTypeRaw       any
 	ServiceType          string
 	ServiceVariant       string
 	StrictServiceVariant bool
@@ -206,6 +208,11 @@ func (q *Query) base(col string, value any, cycles []*string) *sqlBuilder {
 	}
 	// apply_cycle_priority
 	b.order = append(b.order, "CASE WHEN lectionary_readings.cycle = "+quote(nilIfEmpty(q.Cycle))+" THEN 0 WHEN lectionary_readings.cycle = 'all' THEN 1 ELSE 2 END")
+	if q.ReadingTypeRaw != nil && !rb.Blank(q.ReadingTypeRaw) {
+		// apply_reading_type_filter quotes the value; Rails cannot quote a
+		// list or a hash.
+		panic(&rb.RubyError{Class: "TypeError", Message: "can't quote " + rb.ClassName(q.ReadingTypeRaw)})
+	}
 	if q.ReadingType != "" {
 		// Rails interpolates these (where with "?" and Arel.sql), so they are
 		// literals rather than binds here too.

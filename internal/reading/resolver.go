@@ -22,11 +22,15 @@ var movableRulesWithReadings = []string{
 // "" for nil; Translation must be set explicitly ("nvi" is the Ruby default
 // when the caller omits it).
 type Options struct {
-	PrayerBookCode   string
-	Calendar         *liturgical.Calendar
-	DayContext       *liturgical.DayContext
-	Translation      string
-	ReadingType      string
+	PrayerBookCode string
+	Calendar       *liturgical.Calendar
+	DayContext     *liturgical.DayContext
+	Translation    string
+	ReadingType    string
+	// ReadingTypeRaw carries a preference value that is not a string (a
+	// list or a hash from the preferences JSON). Rails passes it through to
+	// Reading::Query, whose connection.quote raises TypeError on it.
+	ReadingTypeRaw   any
 	ServiceType      string
 	ServiceVariant   string
 	PsalmTable       string
@@ -77,6 +81,7 @@ type Resolver struct {
 	Cycle            string
 	Translation      string
 	ReadingType      string
+	readingTypeRaw   any
 	ServiceType      string
 	ServiceVariant   string
 	PsalmTable       string
@@ -125,6 +130,9 @@ func For(ctx context.Context, date Date, o Options) *Resolver {
 		readingType = "complementary"
 	}
 	r.ReadingType = r.rules.NormalizeReadingType(readingType)
+	if !r.rules.WeekdayTableLectionary() {
+		r.readingTypeRaw = o.ReadingTypeRaw
+	}
 	r.ServiceType = o.ServiceType
 	if rb.BlankString(o.ServiceVariant) {
 		r.ServiceVariant = r.defaultServiceVariant()
@@ -281,7 +289,7 @@ func (r *Resolver) liturgicalYear() int {
 func (r *Resolver) Query() *Query {
 	if r.query == nil {
 		r.query = &Query{
-			PrayerBookID: r.prayerBookID(), Cycle: r.Cycle, Date: r.Date, ReadingType: r.ReadingType,
+			PrayerBookID: r.prayerBookID(), Cycle: r.Cycle, Date: r.Date, ReadingType: r.ReadingType, ReadingTypeRaw: r.readingTypeRaw,
 			ServiceType: r.ServiceType, ServiceVariant: r.ServiceVariant, StrictServiceVariant: r.strictServiceVariant(),
 		}
 	}
@@ -450,7 +458,7 @@ func (r *Resolver) officeFallbackReadings() *Selection {
 	for _, office := range []string{"morning_prayer", "evening_prayer"} {
 		sel := For(r.ctx, r.Date, Options{
 			PrayerBookCode: r.Code, Calendar: r.cal, Translation: r.Translation, PsalmTranslation: r.PsalmTranslation,
-			ReadingType: r.ReadingType, ServiceType: office, ServiceVariant: r.ServiceVariant, LoadContent: true, Cache: r.cache,
+			ReadingType: r.ReadingType, ReadingTypeRaw: r.readingTypeRaw, ServiceType: office, ServiceVariant: r.ServiceVariant, LoadContent: true, Cache: r.cache,
 		}).Selection()
 		if sel == nil {
 			continue
@@ -733,7 +741,7 @@ func (r *Resolver) findByResolvedCelebration(info *liturgical.CelebrationAttrs) 
 	rec := q.FindByReferences(r.ctx, r.builder().CelebrationReferences(c))
 	if r.officeReadingRequested() && (rec == nil || rec.CelebrationID == nil) {
 		eq := &Query{
-			PrayerBookID: r.prayerBookID(), Cycle: r.Cycle, Date: r.Date, ReadingType: r.ReadingType,
+			PrayerBookID: r.prayerBookID(), Cycle: r.Cycle, Date: r.Date, ReadingType: r.ReadingType, ReadingTypeRaw: r.readingTypeRaw,
 			ServiceVariant: r.ServiceVariant, StrictServiceVariant: r.strictServiceVariant(),
 		}
 		if e := eq.FindByCelebrationID(r.ctx, c.ID); e != nil {
