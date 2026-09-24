@@ -1,0 +1,59 @@
+cy:
+  reading:
+    presentation:
+      cycle:
+        a: { title: "Blwyddyn A cylch y Sul", summary: "Yr ydym ym Mlwyddyn A cylch tair blynedd y Sul: A, B ac C." }
+        b: { title: "Blwyddyn B cylch y Sul", summary: "Yr ydym ym Mlwyddyn B cylch tair blynedd y Sul: A, B ac C." }
+        c: { title: "Blwyddyn C cylch y Sul", summary: "Yr ydym ym Mlwyddyn C cylch tair blynedd y Sul: A, B ac C." }
+        odd: { title: "Blwyddyn I y cylch dwy flynedd", summary: "Mae'r llithoedd hyn yn dilyn blwyddyn gyntaf y cylch dwy flynedd." }
+        even: { title: "Blwyddyn II y cylch dwy flynedd", summary: "Mae'r llithoedd hyn yn dilyn ail flwyddyn y cylch dwy flynedd." }
+        other: { title: "Cylch llithoedd", summary: "Mae'r set hon yn dilyn y cylch a bennir gan y Llyfr Gweddi hwn." }
+      track:
+        semicontinuous: { title: "Trywydd lled-ddilynol", summary: "Mae'r llithoedd yn dilyn cyfres o destunau Beiblaidd dros yr wythnosau." }
+        complementary: { title: "Trywydd cyflenwol", summary: "Dewisir y llithoedd i ymwneud yn thematig â'r Sul a'i lithoedd eraill." }
+      psalter:
+        appointed: { title: "Salmau penodedig", summary: "Dewisasoch y Salmau a benodir gan lithiadur y Llyfr Gweddi hwn." }
+        monthly: { title: "Sallwyr tri deg diwrnod", summary: "Dewisasoch y Sallwyr tri deg diwrnod; rhennir Salmau'r dydd rhwng y Foreol a'r Hwyrol Weddi." }
+      method:
+        principal_celebration: { title: "Llithoedd y prif ddathliad", summary: "Prif ddathliad y dydd sy'n pennu'r llithoedd hyn." }
+        movable_celebration: { title: "Llithoedd dathliad symudol", summary: "Mae dathliad symudol yn y calendr yn pennu'r llithoedd hyn." }
+        festival: { title: "Llithoedd yr ŵyl", summary: "Yr ŵyl a gedwir heddiw sy'n pennu'r llithoedd hyn." }
+        preparation: { title: "Llithoedd paratoi", summary: "Mae'r llithoedd hyn yn paratoi'r gymuned ar gyfer y Sul canlynol." }
+        weekly_reflection: { title: "Llithoedd myfyrio", summary: "Mae'r llithoedd hyn yn ailystyried ac yn dyfnhau'r Sul blaenorol." }
+        daily_course: { title: "Llithoedd y cwrs beunyddiol", summary: "Mae'r llithoedd hyn yn dilyn y cwrs beunyddiol arferol." }
+        vigil: { title: "Llithoedd gwylnos", summary: "Penodir y llithoedd hyn ar gyfer gwylnos y dathliad nesaf." }
+        minor_celebration: { title: "Llithoedd dathliad y dydd", summary: "Dathliad y calendr sy'n pennu'r llithoedd hyn." }
+        major_season_proper: { title: "Llithoedd priod y tymor", summary: "Priod y Sul yn y tymor litwrgaidd hwn sy'n pennu'r llithoedd hyn." }
+        major_season_sunday: { title: "Llithoedd Sul y tymor", summary: "Y Sul yn y tymor litwrgaidd sy'n pennu'r llithoedd hyn." }
+        sunday_celebration: { title: "Llithoedd dathliad y Sul", summary: "Dathliad y Sul sy'n pennu'r llithoedd hyn." }
+        proper: { title: "Llithoedd y priod", summary: "Y priod rhifedig ar gyfer y Sul hwn sy'n pennu'r llithoedd hyn." }
+        sunday: { title: "Llithoedd y Sul", summary: "Cylch y Sul sy'n pennu'r llithoedd hyn." }
+        civil_date: { title: "Llithoedd penodol i'r dyddiad", summary: "Cofnod y lithiadur ar gyfer y dyddiad hwn sy'n pennu'r llithoedd hyn." }
+        office_fallback: { title: "Llithoedd y Weddi Feunyddiol", summary: "Nid oes gan y Llyfr Gweddi hwn lithiadur Ewcharistaidd ar gyfer yr achos hwn, felly defnyddir cwrs y Weddi Feunyddiol." }
+        no_reading: { title: "Llithoedd ddim ar gael", summary: "Nid oes llithoedd perthnasol wedi'u cofrestru ar gyfer y cyfuniad hwn." }
+        common_worship_weekday_course: { title: "Llithoedd Tabl 2 Common Worship", summary: "Mae Tabl 2 Lithiadur Dyddiau'r Wythnos awdurdodedig Common Worship yn darparu'r llithoedd hyn ar gyfer y Foreol neu'r Hwyrol Weddi." }
+        common_worship_christmas_eve: { title: "Llithoedd Noswyl Nadolig Common Worship", summary: "Mae darpariaeth awdurdodedig Hwyrol Weddi Noswyl Nadolig yn disodli llithoedd y diwrnod gwaith perthnasol." }
+        common_worship_psalm_table: { title: "Tabl Salmau Common Worship", summary: "Mae tabl Salmau Lithiadur Dyddiau'r Wythnos awdurdodedig Common Worship yn darparu'r salm hon." }
+    explanations:
+      rules:
+        principal_celebration: "Mae llithoedd priod y prif ddathliad yn cael blaenoriaeth."
+        movable_celebration: "Mae'r dathliad symudol yn penodi ei lithoedd ei hun."
+        festival: "Mae llithoedd yr ŵyl yn cael blaenoriaeth dros gwrs y diwrnod gwaith."
+        preparation: "Mae'r llithoedd hyn yn paratoi ar gyfer y Sul canlynol."
+        weekly_reflection: "Mae'r llithoedd hyn yn myfyrio ar y Sul blaenorol."
+        daily_course: "Mae'r cwrs beunyddiol arferol yn darparu'r llithoedd hyn."
+        vigil: "Gwylnos y dathliad nesaf sy'n penodi'r llithoedd hyn."
+        monthly_psalter: "Mae'r Sallwyr tri deg diwrnod a ddewiswyd yn darparu Salmau'r dydd, wedi'u rhannu rhwng yr Ofïau."
+        proper_psalms: "Mae'r llyfr yn penodi Salmau priodol ar gyfer y dydd hwn, a hepgorir Salmau'r drefn arferol."
+        common_worship_weekday_course: "Mae Tabl 2 Lithiadur Dyddiau'r Wythnos awdurdodedig Common Worship yn darparu'r llithoedd hyn."
+        common_worship_christmas_eve: "Mae darpariaeth awdurdodedig Hwyrol Weddi Noswyl Nadolig yn disodli llithoedd y diwrnod gwaith."
+        common_worship_psalm_table: "Mae tabl Salmau Lithiadur Dyddiau'r Wythnos awdurdodedig Common Worship yn darparu'r salm hon."
+        minor_celebration: "Mae dathliad y calendr yn darparu'r llithoedd hyn."
+        major_season_proper: "Mae priod y Sul yn cael blaenoriaeth mewn prif dymor litwrgaidd."
+        major_season_sunday: "Mae llithoedd y Sul yn cael blaenoriaeth mewn prif dymor litwrgaidd."
+        sunday_celebration: "Mae dathliad y Sul yn darparu'r llithoedd hyn."
+        proper: "Mae'r priod rhifedig yn darparu'r llithoedd hyn."
+        sunday: "Mae cylch y Sul yn darparu'r llithoedd hyn."
+        civil_date: "Mae cofnod y dyddiad sifil yn darparu'r llithoedd hyn."
+        office_fallback: "Mae cwrs y Foreol Weddi yn darparu llithoedd am nad oes gan y llyfr hwn lithiadur Ewcharistaidd."
+        no_reading: "Ni chanfuwyd llith berthnasol yn y lithiadur."

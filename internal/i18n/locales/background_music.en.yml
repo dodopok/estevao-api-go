@@ -1,0 +1,41 @@
+en:
+  background_music:
+    categories:
+      all: All
+      advent: Advent
+      christmas: Christmas
+      epiphany: Epiphany
+      lent: Lent
+      holy-week: Holy Week
+      easter: Easter
+      pentecost: Pentecost
+      ordinary-time: Ordinary Time
+      night-prayer: Night Prayer
+      instrumental: Instrumental
+      chant: Chant
+      choral: Choral
+    recommended: Recommended music
+    seasons:
+      advent: Advent
+      christmas: Christmas
+      epiphany: Epiphany
+      lent: Lent
+      easter: Easter
+      ordinary-time: Ordinary Time
+      christmastide: Christmastide
+      epiphanytide: Epiphanytide
+      passiontide: Passiontide
+      triduum: Holy Triduum
+      eastertide: Eastertide
+      ascensiontide: Ascensiontide
+      whitsuntide: Whitsuntide
+      trinitytide: Trinitytide
+    offices:
+      morning: Morning
+      midday: Midday
+      evening: Evening
+      compline: Compline
+      prime: Prime
+      terce: Terce
+      none: None
+      late_evening: Late evening

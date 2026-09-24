@@ -1,0 +1,18 @@
+# The Spanish 1979 edition does not print a separate family rite, so both
+# forms carry the same names.
+es:
+  daily_office:
+    office_names:
+      standard:
+        morning: Mañana
+        midday: Mediodía
+        evening: Tarde
+        compline: Completas
+        prime: Prima
+        terce: Tercia
+        none: Nona
+      family:
+        morning: Mañana
+        midday: Mediodía
+        evening: Tarde
+        compline: Completas

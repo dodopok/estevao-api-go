@@ -1,0 +1,94 @@
+---
+es:
+  liturgical:
+    fast_observances:
+      kinds:
+        fast: Día de ayuno
+        total_abstinence: Día de abstinencia total
+        special_devotion_and_total_abstinence: Día de devoción especial y abstinencia
+          total
+        fast_and_abstinence: Día de ayuno y abstinencia
+        fast_and_total_abstinence: Día de ayuno y abstinencia total
+        fasting_or_abstinence: Día de ayuno o abstinencia
+        fasting_with_abstinence: Día de ayuno con abstinencia
+        special_devotion: Día de devoción especial
+        discipline_and_conversion: Día de devoción especial y conversión a Dios
+        discipline_and_self_denial: Día de disciplina y abnegación
+        abstinence: Día de abstinencia
+      reasons:
+        ash_wednesday: Miércoles de Ceniza
+        good_friday: Viernes Santo
+        lenten_weekday: Día ferial de Cuaresma
+        wednesday: Miércoles
+        friday: Viernes
+        ember_day: Día de Témporas
+        rogation_day: Día de Rogativas
+        vigil: Vigilia
+        principal_feast_vigil: Vigilia de una Fiesta Principal
+      statuses:
+        appointed: Este Libro de Oración dispone esta observancia para el día.
+        traditional: Este Libro de Oración presenta esta práctica como una observancia
+          tradicional para el día.
+        encouraged: Este Libro de Oración recomienda esta práctica para el día.
+        optional: Este Libro de Oración ofrece esta práctica como una opción para
+          el día.
+        obligatory: La disciplina eclesial aplicable exige esta práctica en este día.
+      meanings:
+        fast: En general, el ayuno implica limitar la alimentación durante un tiempo
+          como ayuda para la oración; la práctica concreta varía según el Libro de
+          Oración y la orientación de la iglesia local.
+        total_abstinence: La abstinencia consiste en renunciar a algo que determina
+          la tradición. Cuando el libro habla de abstinencia total, la renuncia es
+          completa respecto de lo que especifica; la práctica concreta sigue esa tradición.
+        special_devotion_and_total_abstinence: Este día combina devoción especial
+          con abstinencia total. La práctica concreta sigue lo que determinan este
+          libro y la iglesia local.
+        fast_and_abstinence: En general, el ayuno implica limitar la alimentación
+          durante un tiempo, mientras que la abstinencia implica renunciar a algo
+          específico. Las reglas concretas varían según el Libro de Oración y la orientación
+          de la iglesia local.
+        fast_and_total_abstinence: Este día reúne ayuno y abstinencia total. La práctica
+          concreta sigue lo que determinan este libro y la iglesia local.
+        fasting_or_abstinence: 'El libro deja abierta la forma: el día puede observarse
+          con ayuno o con abstinencia. En ambos casos, se trata de una práctica de
+          oración y renuncia.'
+        fasting_with_abstinence: El libro une un período de ayuno a la abstinencia
+          de algo que él determina.
+        special_devotion: No es necesariamente un día de ayuno, sino una invitación
+          a dedicar una atención especial a la oración y la devoción.
+        discipline_and_conversion: Es un tiempo para volver continuamente a Dios mediante
+          la oración, el arrepentimiento y un cambio de vida.
+        discipline_and_self_denial: Es una invitación a renunciar a algo por amor
+          a Dios y al prójimo, unida a la oración.
+        abstinence: La abstinencia consiste en renunciar a algo determinado, como
+          un alimento, una bebida u otro hábito, por un motivo espiritual. La regla
+          exacta varía según el Libro de Oración.
+      badge_labels:
+        fast: Ayuno
+        total_abstinence: Abstinencia total
+        special_devotion_and_total_abstinence: Devoción y abstinencia total
+        fast_and_abstinence: Ayuno y abstinencia
+        fast_and_total_abstinence: Ayuno y abstinencia total
+        fasting_or_abstinence: Ayuno o abstinencia
+        fasting_with_abstinence: Ayuno con abstinencia
+        special_devotion: Devoción
+        discipline_and_conversion: Devoción y conversión
+        discipline_and_self_denial: Disciplina y abnegación
+        abstinence: Abstinencia
+      motives:
+        ash_wednesday: Este día marca el comienzo de la Cuaresma, tiempo de preparación
+          penitencial para la Pascua.
+        good_friday: Este día recuerda la Pasión y la muerte de Jesucristo.
+        lenten_weekday: En la Cuaresma, la Iglesia está invitada a profundizar la
+          oración, el arrepentimiento y la preparación para la Pascua.
+        wednesday: El miércoles recuerda la traición del Señor y, junto con el viernes,
+          forma el ayuno semanal.
+        friday: El viernes recuerda la crucifixión del Señor e invita a la oración
+          y la renuncia.
+        ember_day: Las Témporas son días de oración e intercesión, especialmente por
+          los ministerios de la Iglesia.
+        rogation_day: Las Rogativas son días de súplica y acción de gracias por el
+          trabajo, la creación y las necesidades del mundo.
+        vigil: La vigilia es un tiempo de preparación en la víspera de una fiesta.
+        principal_feast_vigil: La vigilia prepara para la Fiesta Principal que se
+          aproxima.

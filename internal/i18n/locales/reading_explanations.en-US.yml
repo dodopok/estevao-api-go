@@ -1,0 +1,59 @@
+en-US:
+  reading:
+    presentation:
+      cycle:
+        a: { title: "Year A of the Sunday cycle", summary: "We are in Year A of the three-year Sunday rotation: A, B, and C." }
+        b: { title: "Year B of the Sunday cycle", summary: "We are in Year B of the three-year Sunday rotation: A, B, and C." }
+        c: { title: "Year C of the Sunday cycle", summary: "We are in Year C of the three-year Sunday rotation: A, B, and C." }
+        odd: { title: "Year I of the two-year cycle", summary: "These readings follow the first year of the two-year rotation." }
+        even: { title: "Year II of the two-year cycle", summary: "These readings follow the second year of the two-year rotation." }
+        other: { title: "Reading cycle", summary: "This set follows the cycle defined by this Prayer Book." }
+      track:
+        semicontinuous: { title: "Semicontinuous track", summary: "The readings follow a sequence of biblical texts across the weeks." }
+        complementary: { title: "Complementary track", summary: "The readings are chosen to relate thematically to the Sunday and its other readings." }
+      psalter:
+        appointed: { title: "Appointed Psalms", summary: "You chose the Psalms appointed by this Prayer Book's lectionary." }
+        monthly: { title: "Thirty-day Psalter", summary: "You chose the thirty-day Psalter; this day's Psalms are divided between Morning and Evening Prayer." }
+      method:
+        principal_celebration: { title: "Readings of the principal celebration", summary: "The principal celebration of the day determines these readings." }
+        movable_celebration: { title: "Readings of a movable celebration", summary: "A movable celebration in the calendar determines these readings." }
+        festival: { title: "Festival readings", summary: "The festival observed today determines these readings." }
+        preparation: { title: "Preparation readings", summary: "These readings prepare the community for the following Sunday." }
+        weekly_reflection: { title: "Reflection readings", summary: "These readings revisit and deepen the previous Sunday." }
+        daily_course: { title: "Daily-course readings", summary: "These readings follow the ordinary daily course." }
+        vigil: { title: "Vigil readings", summary: "These readings are appointed for the vigil of the following celebration." }
+        minor_celebration: { title: "Readings of the day's celebration", summary: "The calendar celebration determines these readings." }
+        major_season_proper: { title: "Seasonal proper readings", summary: "The Sunday proper in this liturgical season determines these readings." }
+        major_season_sunday: { title: "Sunday readings of the season", summary: "The Sunday in the liturgical season determines these readings." }
+        sunday_celebration: { title: "Sunday celebration readings", summary: "The Sunday celebration determines these readings." }
+        proper: { title: "Proper readings", summary: "The numbered proper for this Sunday determines these readings." }
+        sunday: { title: "Sunday readings", summary: "The Sunday cycle determines these readings." }
+        civil_date: { title: "Date-specific readings", summary: "The lectionary entry for this date determines these readings." }
+        office_fallback: { title: "Daily Office readings", summary: "This Prayer Book has no Eucharistic lectionary for this case, so the Daily Office course applies." }
+        no_reading: { title: "Readings unavailable", summary: "No applicable readings are registered for this combination." }
+        common_worship_weekday_course: { title: "Common Worship Table 2 readings", summary: "The authorized Common Worship Weekday Lectionary Table 2 supplies these Morning or Evening Prayer readings." }
+        common_worship_christmas_eve: { title: "Common Worship Christmas Eve readings", summary: "The authorized Christmas Eve Evening Prayer provision replaces the readings for the relevant weekday." }
+        common_worship_psalm_table: { title: "Common Worship Psalm table", summary: "The authorized Common Worship Weekday Lectionary Psalm table supplies this psalm." }
+    explanations:
+      rules:
+        principal_celebration: "The proper readings of the principal celebration take precedence."
+        movable_celebration: "The movable celebration appoints its own readings."
+        festival: "The festival readings take precedence over the weekday course."
+        preparation: "These readings prepare for the following Sunday."
+        weekly_reflection: "These readings reflect on the preceding Sunday."
+        daily_course: "The ordinary daily course supplies these readings."
+        vigil: "The vigil of the following celebration appoints these readings."
+        monthly_psalter: "The chosen thirty-day Psalter supplies this day's Psalms, divided between the Offices."
+        proper_psalms: "The book appoints proper Psalms for this day, and the Psalms of ordinary course are omitted."
+        common_worship_weekday_course: "The authorized Common Worship Weekday Lectionary Table 2 supplies these readings."
+        common_worship_christmas_eve: "The authorized Common Worship Christmas Eve Evening Prayer provision replaces the weekday readings."
+        common_worship_psalm_table: "The authorized Common Worship Weekday Lectionary Psalm table supplies this psalm."
+        minor_celebration: "The calendar celebration supplies these readings."
+        major_season_proper: "The Sunday proper takes precedence in a major season."
+        major_season_sunday: "The Sunday readings take precedence in a major season."
+        sunday_celebration: "The Sunday celebration supplies these readings."
+        proper: "The numbered proper supplies these readings."
+        sunday: "The Sunday cycle supplies these readings."
+        civil_date: "The civil-date entry supplies these readings."
+        office_fallback: "The Morning Prayer course supplies readings because this book has no Eucharistic lectionary."
+        no_reading: "No applicable lectionary reading was found."

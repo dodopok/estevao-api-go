@@ -1,0 +1,17 @@
+pt-BR:
+  daily_office:
+    office_names:
+      standard:
+        morning: Matutino
+        midday: Meio-Dia
+        evening: Vespertino
+        compline: Completas
+        prime: Prima
+        terce: Terça
+        none: Noa
+      family:
+        morning: De Manhã
+        midday: Ao Meio-Dia
+        evening: Ao Entardecer
+        late_evening: Ao Anoitecer
+        compline: No Fim do Dia

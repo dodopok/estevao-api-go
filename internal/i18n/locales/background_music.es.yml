@@ -1,0 +1,41 @@
+es:
+  background_music:
+    categories:
+      all: Todas
+      advent: Adviento
+      christmas: Navidad
+      epiphany: Epifanía
+      lent: Cuaresma
+      holy-week: Semana Santa
+      easter: Pascua
+      pentecost: Pentecostés
+      ordinary-time: Tiempo Ordinario
+      night-prayer: Oración de la noche
+      instrumental: Instrumental
+      chant: Canto
+      choral: Coral
+    recommended: Música recomendada
+    seasons:
+      advent: Adviento
+      christmas: Navidad
+      epiphany: Epifanía
+      lent: Cuaresma
+      easter: Pascua
+      ordinary-time: Tiempo Ordinario
+      christmastide: Tiempo de Navidad
+      epiphanytide: Tiempo de la Epifanía
+      passiontide: Tiempo de la Pasión
+      triduum: Triduo Pascual
+      eastertide: Tiempo Pascual
+      ascensiontide: Tiempo de la Ascensión
+      whitsuntide: Tiempo de Pentecostés
+      trinitytide: Tiempo de la Trinidad
+    offices:
+      morning: Mañana
+      midday: Mediodía
+      evening: Tarde
+      compline: Completas
+      prime: Prima
+      terce: Tercia
+      none: Nona
+      late_evening: Oración de la noche

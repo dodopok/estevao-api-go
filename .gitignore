@@ -1,0 +1,5 @@
+/estevao-api
+/bin/
+*.test
+coverage.out
+/tmp/

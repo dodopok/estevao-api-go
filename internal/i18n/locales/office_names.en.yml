@@ -1,0 +1,17 @@
+en:
+  daily_office:
+    office_names:
+      standard:
+        morning: Morning
+        midday: Midday
+        evening: Evening
+        compline: Compline
+        prime: Prime
+        terce: Terce
+        none: None
+      family:
+        morning: Morning
+        midday: Midday
+        evening: Evening
+        late_evening: Late Evening
+        compline: Compline

@@ -1,0 +1,90 @@
+---
+en-US:
+  liturgical:
+    fast_observances:
+      kinds:
+        fast: Fast day
+        total_abstinence: Day of total abstinence
+        special_devotion_and_total_abstinence: Day of special devotion and total abstinence
+        fast_and_abstinence: Day of fasting and abstinence
+        fast_and_total_abstinence: Day of fasting and total abstinence
+        fasting_or_abstinence: Day of fasting or abstinence
+        fasting_with_abstinence: Fast day with abstinence
+        special_devotion: Day of special devotion
+        discipline_and_conversion: Day of special devotion and conversion to God
+        discipline_and_self_denial: Day of discipline and self-denial
+        abstinence: Day of abstinence
+      reasons:
+        ash_wednesday: Ash Wednesday
+        good_friday: Good Friday
+        lenten_weekday: Lenten weekday
+        wednesday: Wednesday
+        friday: Friday
+        ember_day: Ember Day
+        rogation_day: Rogation Day
+        vigil: Vigil
+        principal_feast_vigil: Vigil of a Principal Feast
+      statuses:
+        appointed: This Prayer Book appoints this observance for the day.
+        traditional: This Prayer Book presents this as a traditional observance for
+          the day.
+        encouraged: This Prayer Book encourages this practice for the day.
+        optional: This Prayer Book offers this practice as an option for the day.
+        obligatory: The applicable discipline of the Church requires this practice
+          on this day.
+      meanings:
+        fast: Fasting generally involves limiting food for a period of time as an
+          aid to prayer; the exact practice varies by Prayer Book and local church
+          guidance.
+        total_abstinence: Abstinence means giving up something specified by the tradition.
+          When the book calls for total abstinence, the renunciation is complete with
+          respect to what it specifies; the concrete practice follows that tradition.
+        special_devotion_and_total_abstinence: This day combines special devotion
+          with total abstinence. The concrete practice follows what this book and
+          the local church prescribe.
+        fast_and_abstinence: Fasting generally involves limiting food for a period
+          of time, while abstinence means giving up something specific. The exact
+          rules vary by Prayer Book and local church guidance.
+        fast_and_total_abstinence: This day combines fasting and total abstinence.
+          The concrete practice follows what this book and the local church prescribe.
+        fasting_or_abstinence: 'The book leaves the form open: the day may be kept
+          through fasting or abstinence. In either case, it is a practice of prayer
+          and self-denial.'
+        fasting_with_abstinence: The book joins a period of fasting to abstinence
+          from something it specifies.
+        special_devotion: This is not necessarily a day of fasting, but an invitation
+          to give special attention to prayer and devotion.
+        discipline_and_conversion: It is a time to turn continually toward God through
+          prayer, repentance, and a change of life.
+        discipline_and_self_denial: It is an invitation to give something up for love
+          of God and neighbor, joined to prayer.
+        abstinence: Abstinence means giving up something specified, such as food,
+          drink, or another habit, for a spiritual purpose. The exact rule varies
+          by Prayer Book.
+      badge_labels:
+        fast: Fasting
+        total_abstinence: Total abstinence
+        special_devotion_and_total_abstinence: Devotion and total abstinence
+        fast_and_abstinence: Fasting and abstinence
+        fast_and_total_abstinence: Fasting and total abstinence
+        fasting_or_abstinence: Fasting or abstinence
+        fasting_with_abstinence: Fasting with abstinence
+        special_devotion: Devotion
+        discipline_and_conversion: Devotion and conversion
+        discipline_and_self_denial: Discipline and self-denial
+        abstinence: Abstinence
+      motives:
+        ash_wednesday: This day begins Lent, a season of penitential preparation for
+          Easter.
+        good_friday: This day recalls the Passion and death of Jesus Christ.
+        lenten_weekday: In Lent, the Church is invited to deepen prayer, repentance,
+          and preparation for Easter.
+        wednesday: Wednesday recalls the betrayal of the Lord, and is kept with Friday
+          as a weekly fast.
+        friday: Friday recalls the Lord's crucifixion and invites prayer and self-denial.
+        ember_day: The Ember Days are days of prayer and intercession, especially
+          for the ministries of the Church.
+        rogation_day: The Rogation Days are days of supplication and thanksgiving
+          for work, creation, and the needs of the world.
+        vigil: The vigil is a time of preparation on the eve of a feast.
+        principal_feast_vigil: The vigil prepares for the approaching Principal Feast.

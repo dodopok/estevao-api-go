@@ -1,0 +1,59 @@
+pt-BR:
+  reading:
+    presentation:
+      cycle:
+        a: { title: "Ano A do ciclo dominical", summary: "Estamos no Ano A da rotação dominical de três anos: A, B e C." }
+        b: { title: "Ano B do ciclo dominical", summary: "Estamos no Ano B da rotação dominical de três anos: A, B e C." }
+        c: { title: "Ano C do ciclo dominical", summary: "Estamos no Ano C da rotação dominical de três anos: A, B e C." }
+        odd: { title: "Ano I do ciclo bienal", summary: "Estas leituras seguem o primeiro ano da rotação de dois anos." }
+        even: { title: "Ano II do ciclo bienal", summary: "Estas leituras seguem o segundo ano da rotação de dois anos." }
+        other: { title: "Ciclo de leituras", summary: "Este conjunto segue o ciclo definido por este Livro de Oração." }
+      track:
+        semicontinuous: { title: "Trilha semicontínua", summary: "As leituras acompanham uma sequência de textos bíblicos ao longo das semanas." }
+        complementary: { title: "Trilha complementar", summary: "As leituras são escolhidas para dialogar tematicamente com o domingo e suas demais leituras." }
+      psalter:
+        appointed: { title: "Salmos designados", summary: "Você escolheu os Salmos designados pelo lecionário deste Livro de Oração." }
+        monthly: { title: "Saltério de trinta dias", summary: "Você escolheu o Saltério de trinta dias; os Salmos deste dia são divididos entre a Oração Matutina e a Oração Vespertina." }
+      method:
+        principal_celebration: { title: "Leituras da celebração principal", summary: "A celebração principal do dia determina estas leituras." }
+        movable_celebration: { title: "Leituras de celebração móvel", summary: "Uma celebração móvel do calendário determina estas leituras." }
+        festival: { title: "Leituras do festival", summary: "O festival celebrado hoje determina estas leituras." }
+        preparation: { title: "Leituras de preparação", summary: "Estas leituras preparam a comunidade para o domingo seguinte." }
+        weekly_reflection: { title: "Leituras de reflexão", summary: "Estas leituras retomam e aprofundam o domingo anterior." }
+        daily_course: { title: "Leituras do curso diário", summary: "Estas leituras seguem o curso diário ordinário." }
+        vigil: { title: "Leituras da vigília", summary: "Estas leituras são designadas para a vigília da celebração seguinte." }
+        minor_celebration: { title: "Leituras da celebração do dia", summary: "A celebração do calendário determina estas leituras." }
+        major_season_proper: { title: "Leituras próprias da estação", summary: "O próprio do domingo nesta estação litúrgica determina estas leituras." }
+        major_season_sunday: { title: "Leituras dominicais da estação", summary: "O domingo da estação litúrgica determina estas leituras." }
+        sunday_celebration: { title: "Leituras da celebração dominical", summary: "A celebração do domingo determina estas leituras." }
+        proper: { title: "Leituras do próprio", summary: "O próprio numerado deste domingo determina estas leituras." }
+        sunday: { title: "Leituras do domingo", summary: "O ciclo dominical determina estas leituras." }
+        civil_date: { title: "Leituras da data", summary: "A entrada própria desta data no lecionário determina estas leituras." }
+        office_fallback: { title: "Leituras do Ofício Diário", summary: "Este Livro de Oração não possui lecionário eucarístico para este caso; aplicamos o curso do Ofício Diário." }
+        no_reading: { title: "Leituras indisponíveis", summary: "Não há leituras aplicáveis cadastradas para esta combinação." }
+        common_worship_weekday_course: { title: "Leituras da Tabela 2 do Common Worship", summary: "A Tabela 2 do Lecionário Semanal autorizado do Common Worship fornece estas leituras da Oração Matutina ou Vespertina." }
+        common_worship_christmas_eve: { title: "Leituras da véspera de Natal do Common Worship", summary: "A provisão autorizada da Oração Vespertina da véspera de Natal substitui as leituras do dia de semana correspondente." }
+        common_worship_psalm_table: { title: "Tabela de salmos do Common Worship", summary: "A tabela de salmos do Lecionário Semanal autorizado do Common Worship fornece este salmo." }
+    explanations:
+      rules:
+        principal_celebration: "As leituras próprias da celebração principal têm precedência."
+        movable_celebration: "A celebração móvel determina suas próprias leituras."
+        festival: "As leituras do festival têm precedência sobre o curso semanal."
+        preparation: "Estas leituras preparam para o domingo seguinte."
+        weekly_reflection: "Estas leituras refletem sobre o domingo anterior."
+        daily_course: "O curso diário ordinário fornece estas leituras."
+        vigil: "A vigília da celebração seguinte designa estas leituras."
+        monthly_psalter: "O Saltério de trinta dias escolhido fornece os Salmos deste dia, divididos entre os Ofícios."
+        proper_psalms: "O livro designa Salmos próprios para este dia, e os Salmos do curso ordinário são omitidos."
+        common_worship_weekday_course: "A Tabela 2 do Lecionário Semanal autorizado do Common Worship fornece estas leituras."
+        common_worship_christmas_eve: "A provisão autorizada da Oração Vespertina da véspera de Natal substitui as leituras do dia de semana."
+        common_worship_psalm_table: "A tabela de salmos do Lecionário Semanal autorizado do Common Worship fornece este salmo."
+        minor_celebration: "A celebração do calendário fornece estas leituras."
+        major_season_proper: "O próprio do domingo tem precedência em uma quadra principal."
+        major_season_sunday: "As leituras dominicais têm precedência em uma quadra principal."
+        sunday_celebration: "A celebração dominical fornece estas leituras."
+        proper: "O próprio numerado fornece estas leituras."
+        sunday: "O ciclo dominical fornece estas leituras."
+        civil_date: "A entrada da data civil fornece estas leituras."
+        office_fallback: "O curso da Oração Matutina fornece as leituras porque este livro não possui lecionário eucarístico."
+        no_reading: "Nenhuma leitura aplicável foi encontrada no lecionário."

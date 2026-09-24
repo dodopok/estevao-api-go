@@ -1,0 +1,41 @@
+cy:
+  background_music:
+    categories:
+      all: Pob un
+      advent: Adfent
+      christmas: Nadolig
+      epiphany: Ystwyll
+      lent: Y Grawys
+      holy-week: Wythnos Fawr
+      easter: Y Pasg
+      pentecost: Pentecost
+      ordinary-time: Amser Cyffredin
+      night-prayer: Gweddi'r Nos
+      instrumental: Offerynnol
+      chant: Siant
+      choral: Corawl
+    recommended: Cerddoriaeth a argymhellir
+    seasons:
+      advent: Adfent
+      christmas: Nadolig
+      epiphany: Ystwyll
+      lent: Y Grawys
+      easter: Y Pasg
+      ordinary-time: Amser Cyffredin
+      christmastide: Tymor y Nadolig
+      epiphanytide: Tymor yr Ystwyll
+      passiontide: Tymor y Dioddefaint
+      triduum: Y Triduum Sanctaidd
+      eastertide: Tymor y Pasg
+      ascensiontide: Tymor y Dyrchafael
+      whitsuntide: Tymor y Sulgwyn
+      trinitytide: Tymor y Drindod
+    offices:
+      morning: Boreol Weddi
+      midday: Gweddi Ganol Dydd
+      evening: Hwyrol Weddi
+      compline: Gweddi cyn Cysgu
+      prime: Gweddi'r Bore
+      terce: Gweddi'r Drydedd Awr
+      none: Gweddi'r Nawfed Awr
+      late_evening: Gweddi'r Nos

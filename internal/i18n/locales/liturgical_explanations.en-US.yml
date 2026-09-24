@@ -1,0 +1,218 @@
+"en-US":
+  date:
+    formats:
+      liturgical: "%B %-d, %Y"
+    month_names:
+      - ~
+      - January
+      - February
+      - March
+      - April
+      - May
+      - June
+      - July
+      - August
+      - September
+      - October
+      - November
+      - December
+  liturgical:
+    season_meanings:
+      advent: "Advent opens the year in watchful waiting: for Christ's coming at Bethlehem, and for his coming again in glory."
+      christmastide: "Christmastide keeps the Twelve Days of the Nativity, from Christmas Day to the eve of the Epiphany."
+      epiphanytide: "Epiphanytide follows the showing forth of Christ to the nations, from the Epiphany until Septuagesima."
+      septuagesimatide: "Septuagesimatide is the fore-Lent: three Sundays in which the Church lays aside the Alleluia and turns towards the fast."
+      lent: "Lent is the forty days' fast, kept in prayer, abstinence and almsgiving in preparation for Easter."
+      passiontide: "Passiontide is the last fortnight of Lent, from Passion Sunday, when the Church fixes her gaze on the Cross."
+      triduum: "The Sacred Triduum is the three days from Mattins of Maundy Thursday to the eve of Easter, in which the Church keeps the Lord's supper, passion and burial."
+      eastertide: "Eastertide is the great fifty days, from Easter Day, in which the Church keeps the Resurrection as one continuous feast."
+      ascensiontide: "Ascensiontide runs from the Ascension to the eve of Whitsunday, while the Church waits for the promise of the Father."
+      whitsuntide: "Whitsuntide keeps the coming of the Holy Ghost at Pentecost and the octave that follows it."
+      trinitytide: "Trinitytide is the long season after Trinity Sunday, in which the Church grows in the faith she has confessed."
+    presentation:
+      day:
+        title: "%{celebration}"
+        summary: "We are in %{season}, in cycle %{cycle}."
+      season_range:
+        title: "%{season} began on %{start_date} and ends on %{end_date}."
+        summary:
+          zero: "The season ends today."
+          one: "The season ends tomorrow."
+          other: "%{count} days remain in this season."
+      celebration:
+        title: "Today we celebrate %{celebration}"
+        summary: "%{reason}"
+      no_celebration:
+        title: "Today belongs to the season of %{season}"
+        summary: "%{reason}"
+      color:
+        title: "Today's liturgical color is %{color}"
+        summary: "%{reason}"
+      transfer:
+        title: "Celebration transferred"
+        summary: "It was transferred from %{from} to %{to}. %{reason}"
+      reading:
+        title: "%{slot}"
+        summary: "%{reference}. %{reason}"
+      lectionary:
+        title: "Selected lectionary"
+        summary: "These readings are taken from the %{lectionary}."
+      reading_slot:
+        first_reading: "First reading"
+        psalm: "Psalm"
+        psalm_alternative: "Alternative psalm"
+        second_reading: "Second reading"
+        gospel: "Gospel"
+    color_meanings:
+      advent_violet: "Violet expresses watchful expectation, hope, and preparation for Christ's coming in Advent."
+      christmas_white: "White or gold expresses the joy, light, and purity of celebrating Christ's birth."
+      epiphany_green: "Green recalls the growth of faith as Christ's light is made known to the world."
+      lent_purple: "Purple expresses penitence, self-examination, fasting, and preparation for Easter."
+      easter_white: "White or gold celebrates the joy, light, and victory of Christ's resurrection."
+      ordinary_green: "Green symbolizes hope and growth in faith and in the life of the Church during Ordinary Time."
+      gaudete_rose: "Rose expresses the joy that begins to break through the waiting and preparation of Advent."
+      laetare_rose: "Rose expresses a pause of joy and hope in the midst of Lenten penitence and preparation."
+      holy_week_red: "Red accompanies Holy Week and recalls Christ's passion and his love poured out unto death."
+      palm_sunday_red: "Red recalls Christ's entry into Jerusalem and the Passion proclaimed on the same day."
+      good_friday_red: "Red recalls Christ's blood and his self-offering on the cross on Good Friday."
+      good_friday_black: "Black expresses the Church's mourning and silence before Christ's death on Good Friday."
+      maundy_thursday_white: "White expresses the joy and communion of the institution of the Eucharist on Maundy Thursday."
+      easter_vigil_white: "White or gold announces the light, new life, and joy of the Resurrection celebrated at the Easter Vigil."
+      holy_saturday_black: "Black expresses mourning, silence, and the Church's waiting beside Christ's tomb on Holy Saturday."
+      ascension_white: "White or gold celebrates the glory of the risen Christ in his Ascension."
+      pentecost_red: "Red represents the fire of the Holy Spirit and the power that sends the Church in mission at Pentecost."
+      trinity_white: "White or gold celebrates the glory and fullness of the life of the Triune God on Trinity Sunday."
+      all_saints_white: "White or gold expresses the joy and holiness celebrated on All Saints' Day."
+      celebration_martyr_red: "Red recalls the blood shed and the faithful witness of the martyrs."
+      celebration_apostle_red: "Red recalls the fire of the Holy Spirit and the missionary witness of the apostles and evangelists."
+      celebration_white: "White or gold expresses joy, light, purity, and holiness in the celebration."
+      celebration_red: "Red associates the celebration with the fire of the Holy Spirit, Christ's blood, and Christian witness."
+      celebration_penitential: "Purple/violet expresses penitence, prayer, and preparation for the celebration."
+      celebration_rose: "Rose signals joy and hope in the midst of a time of preparation or penitence."
+      celebration_green: "Green symbolizes hope and growth in faith."
+      celebration_black: "Black expresses mourning, solemnity, and silence before death."
+      generic_white: "White or gold expresses joy, light, purity, and new life."
+      generic_red: "Red recalls the fire of the Holy Spirit, Christ's blood, and the witness of faith."
+      generic_penitential: "Purple/violet expresses penitence, prayer, and preparation."
+      generic_rose: "Rose signals joy and hope in the midst of preparation or penitence."
+      generic_green: "Green symbolizes hope and growth in faith."
+      generic_black: "Black expresses mourning, solemnity, and silence."
+      generic_color: "The liturgical color communicates the predominant spiritual theme of the celebration."
+      advent_blue: "Blue is the Sarum colour of Advent: the blue of daybreak and of the hope of Christ's coming, kept where the Roman use keeps violet."
+      celebration_blue: "Blue expresses hope and expectation, and the honour paid to the Blessed Virgin Mary."
+      generic_blue: "Blue expresses hope, expectation, and the light that is coming."
+    enums:
+      celebration_type:
+        principal_feast: "Principal feast"
+        major_holy_day: "Major holy day"
+        festival: "Festival"
+        lesser_feast: "Lesser feast"
+        commemoration: "Commemoration"
+        sunday: "Sunday"
+      color_source:
+        celebration: "Celebration"
+        season: "Liturgical season"
+      reading_source:
+        celebration: "Celebration"
+        daily_cycle: "Daily cycle"
+        daily_psalter: "Daily psalter"
+        common_worship_table_2: "Common Worship Table 2"
+        common_worship_psalm_table: "Common Worship Psalm table"
+        fallback: "Fallback"
+        proper: "Proper"
+        sunday: "Sunday"
+        civil_date: "Civil date"
+        monthly_psalter: "Thirty-day Psalter"
+        proper_psalms: "Proper Psalms"
+      lectionary_variant:
+        original_1928: "Original 1928"
+        revised_1945: "Revised 1945"
+        original_1662: "Original 1662"
+        revised_1871: "Revised 1871"
+        revised_1922: "Optional revised 1922"
+      psalm_cycle:
+        appointed: "Appointed Psalms"
+        monthly: "Thirty-day Psalter"
+      reading_track:
+        semicontinuous: "Semicontinuous"
+        complementary: "Complementary"
+      reading_cycle:
+        A: "Year A"
+        A-1: "Year A / Weekday Year 1"
+        A-2: "Year A / Weekday Year 2"
+        B: "Year B"
+        B-1: "Year B / Weekday Year 1"
+        B-2: "Year B / Weekday Year 2"
+        C: "Year C"
+        C-1: "Year C / Weekday Year 1"
+        C-2: "Year C / Weekday Year 2"
+        odd: "Year I"
+        even: "Year II"
+        all: "All cycles"
+        other: "Reading cycle"
+      common_worship_reading_table:
+        table_2: "Table 2 — Old and New Testament readings"
+        seasonal_boundary: "Table 2 — seasonal boundary column"
+      common_worship_psalm_table:
+        table_3: "Table 3 — Psalms for the Seasons"
+        table_4: "Table 4 — Psalms for Ordinary Time"
+        table_5: "Table 5 — alternative Psalms in course"
+      common_worship_weekday_year:
+        year_1: "Weekday Year 1"
+        year_2: "Weekday Year 2"
+      common_worship_psalm_period:
+        advent: "Advent provision"
+        christmas: "Christmas provision"
+        epiphany: "Epiphany provision"
+        presentation: "Presentation provision"
+        lent: "Lent provision"
+        easter: "Easter provision"
+        before_advent: "Provision before Advent"
+        ordinary_time: "Ordinary Time provision"
+        course: "Psalms in course"
+      common_worship_psalm_preference:
+        appointed: "Tables 3–4 (appointed psalms)"
+        course: "Table 5 (Psalms in course)"
+      common_worship_rule:
+        christmas_eve_evening: "Christmas Eve Evening Prayer replaces the weekday provision."
+        ascension_alternative: "The authorized Ascension alternative sequence is in use."
+        table_2_seasonal_boundary: "Table 2 uses its seasonal boundary column for this week."
+      service_type:
+        eucharist: "Eucharist"
+        morning_prayer: "Morning Prayer"
+        evening_prayer: "Evening Prayer"
+        daily_office: "Daily Office"
+        weekly: "Weekly"
+        vigil: "Vigil"
+      reading_fallback:
+        office_fallback: "Daily Office fallback"
+        daily_course: "Daily-course fallback"
+        principal_celebration: "Principal-celebration fallback"
+        movable_celebration: "Movable-celebration fallback"
+        festival: "Festival fallback"
+        major_season_proper: "Season-proper fallback"
+        major_season_sunday: "Season-Sunday fallback"
+        sunday_celebration: "Sunday-celebration fallback"
+        minor_celebration: "Lesser-celebration fallback"
+        proper: "Proper fallback"
+        sunday: "Sunday fallback"
+        civil_date: "Civil-date fallback"
+        no_reading: "No-reading fallback"
+        monthly_psalter: "Thirty-day Psalter fallback"
+        proper_psalms: "Proper Psalms"
+    explanations:
+      no_celebration: "No celebration was appointed for this date."
+      only_candidate: "This was the only celebration appointed for the date."
+      principal_feast: "A principal feast has precedence over the other candidates."
+      major_holy_day: "A major holy day has precedence over the other candidates."
+      sunday_in_major_season: "The Sunday observance of the season has precedence."
+      lowest_rank: "The candidate with the highest liturgical precedence was selected."
+      annunciation_protected_period: "The Annunciation was transferred beyond the protected Easter period."
+      protected_period: "The celebration was transferred because its original date falls in a protected period."
+      sunday_conflict: "The celebration was transferred because its original date falls on a Sunday."
+      all_saints_observance: "All Saints was observed on the permitted Sunday."
+      calendar_conflict: "The celebration was transferred because of a calendar conflict."
+      principal_celebration_overrides_season: "The color of the principal celebration overrides the seasonal color."
+      sunday_uses_season_color: "The Sunday uses the color of the liturgical season."
+      weekday_celebration_color: "The weekday uses the color appointed for the celebration."
+      season_color: "The color comes from the liturgical season."

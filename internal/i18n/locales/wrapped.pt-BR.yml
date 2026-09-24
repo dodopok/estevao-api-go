@@ -1,0 +1,16 @@
+"pt-BR":
+  wrapped:
+    frequent_office:
+      generic: "Sua oração encontrou seu ritmo."
+      morning: "Sua oração começa cedo."
+      prime: "Sua oração começa com o dia."
+      terce: "Sua oração acompanha a manhã."
+      midday: "Sua oração encontra o meio do dia."
+      evening: "Seu dia termina em oração."
+      compline: "Você guarda a noite em oração."
+      late_evening: "Você encerra a noite em oração."
+    prayer_time_headline: "Você é uma pessoa das %{hour}."
+    common_time_summary: "Sua faixa mais comum: %{highlight}, com %{count} Ofícios."
+    common_time_highlight: "entre %{start} e %{finish}"
+    streak_intro: "De %{start} até %{finish}."
+    hour: "%{hour}h"

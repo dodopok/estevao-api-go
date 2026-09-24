@@ -1,0 +1,16 @@
+en:
+  wrapped:
+    frequent_office:
+      generic: "Your prayer found its rhythm."
+      morning: "Your prayer starts early."
+      prime: "Your prayer begins with the day."
+      terce: "Your prayer meets the morning."
+      midday: "Your prayer finds the middle of the day."
+      evening: "Your day ends in prayer."
+      compline: "You keep watch in prayer at night."
+      late_evening: "You close the night in prayer."
+    prayer_time_headline: "You're a %{hour} person."
+    common_time_summary: "Your most common window: %{highlight}, with %{count} offices."
+    common_time_highlight: "between %{start} and %{finish}"
+    streak_intro: "From %{start} to %{finish}."
+    hour: "%{hour}:00"

@@ -1,0 +1,18 @@
+# The Lusitanian book names the offices in full and does not print a separate
+# family rite, so both forms carry the same names.
+pt-PT:
+  daily_office:
+    office_names:
+      standard:
+        morning: Oração da Manhã
+        midday: Oração do Meio-Dia
+        evening: Oração da Tarde
+        compline: Oração da Noite
+        prime: Hora Prima
+        terce: Hora Terça
+        none: Hora Noa
+      family:
+        morning: Oração da Manhã
+        midday: Oração do Meio-Dia
+        evening: Oração da Tarde
+        compline: Oração da Noite

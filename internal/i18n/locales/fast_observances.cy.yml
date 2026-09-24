@@ -1,0 +1,94 @@
+---
+cy:
+  liturgical:
+    fast_observances:
+      kinds:
+        fast: Diwrnod ympryd
+        total_abstinence: Diwrnod o ymatal llwyr
+        special_devotion_and_total_abstinence: Diwrnod o ddefosiwn arbennig ac ymatal
+          llwyr
+        fast_and_abstinence: Diwrnod o ympryd ac ymatal
+        fast_and_total_abstinence: Diwrnod o ympryd ac ymatal llwyr
+        fasting_or_abstinence: Diwrnod o ympryd neu ymatal
+        fasting_with_abstinence: Diwrnod ympryd gydag ymatal
+        special_devotion: Diwrnod o ddefosiwn arbennig
+        discipline_and_conversion: Diwrnod o ddisgyblaeth a throedigaeth
+        discipline_and_self_denial: Diwrnod o ddisgyblaeth a hunanymwadiad
+        abstinence: Diwrnod o ymatal
+      reasons:
+        ash_wednesday: Dydd Mercher y Lludw
+        good_friday: Dydd Gwener y Groglith
+        lenten_weekday: Diwrnod wythnos yn y Garawys
+        wednesday: Dydd Mercher
+        friday: Dydd Gwener
+        ember_day: Dydd Gŵyl y Tymhorau
+        rogation_day: Diwrnod y Rogasiwn
+        vigil: Gwylnos
+        principal_feast_vigil: Gwylnos Prif Ŵyl
+      statuses:
+        appointed: Mae'r Llyfr Gweddi hwn yn dynodi'r arfer hwn ar gyfer y diwrnod.
+        traditional: Mae'r Llyfr Gweddi hwn yn cyflwyno'r arfer hwn fel arfer traddodiadol
+          ar gyfer y diwrnod.
+        encouraged: Mae'r Llyfr Gweddi hwn yn annog yr arfer hwn ar gyfer y diwrnod.
+        optional: Mae'r Llyfr Gweddi hwn yn cynnig yr arfer hwn fel opsiwn ar gyfer
+          y diwrnod.
+        obligatory: Mae disgyblaeth berthnasol yr Eglwys yn gofyn am yr arfer hwn
+          ar y diwrnod.
+      meanings:
+        fast: Yn gyffredinol, mae ymprydio yn golygu cyfyngu ar fwyd am gyfnod er
+          mwyn cynorthwyo gweddi; mae'r union arfer yn amrywio yn ôl y Llyfr Gweddi
+          ac arweiniad yr eglwys leol.
+        total_abstinence: Mae ymatal yn golygu rhoi'r gorau i rywbeth a bennir gan
+          y traddodiad. Pan fo'r ymatal yn llwyr, mae'r ymwrthod yn gyflawn o ran
+          yr hyn a bennir gan y llyfr; mae'r arfer pendant yn dilyn y traddodiad hwnnw.
+        special_devotion_and_total_abstinence: Mae'r diwrnod hwn yn cyfuno defosiwn
+          arbennig ag ymatal llwyr. Mae'r arfer pendant yn dilyn yr hyn a bennir gan
+          y llyfr hwn a'r eglwys leol.
+        fast_and_abstinence: Yn gyffredinol, mae ymprydio yn golygu cyfyngu ar fwyd
+          am gyfnod, tra bo ymatal yn golygu rhoi'r gorau i rywbeth penodol. Mae'r
+          union reolau yn amrywio yn ôl y Llyfr Gweddi ac arweiniad yr eglwys leol.
+        fast_and_total_abstinence: Mae'r diwrnod hwn yn cyfuno ymprydio ag ymatal
+          llwyr. Mae'r arfer pendant yn dilyn yr hyn a bennir gan y llyfr hwn a'r
+          eglwys leol.
+        fasting_or_abstinence: 'Mae''r llyfr yn gadael y ffurf yn agored: gellir cadw''r
+          diwrnod drwy ymprydio neu ymatal. Yn y naill achos neu''r llall, arfer o
+          weddi a hunanymwadiad ydyw.'
+        fasting_with_abstinence: Mae'r llyfr yn cyfuno cyfnod o ymprydio ag ymatal
+          rhag rhywbeth a bennir ganddo.
+        special_devotion: Nid yw hwn o reidrwydd yn ddiwrnod o ymprydio, ond yn wahoddiad
+          i roi sylw arbennig i weddi a defosiwn.
+        discipline_and_conversion: Amser yw hwn i droi'n barhaus at Dduw drwy weddi,
+          edifeirwch a newid bywyd.
+        discipline_and_self_denial: Gwahoddiad yw hwn i roi'r gorau i rywbeth er mwyn
+          cariad at Dduw a'n cymydog, ynghyd â gweddi.
+        abstinence: Mae ymatal yn golygu rhoi'r gorau i rywbeth a bennir, megis bwyd,
+          diod neu arfer arall, at ddiben ysbrydol. Mae'r union reol yn amrywio yn
+          ôl y Llyfr Gweddi.
+      badge_labels:
+        fast: Ympryd
+        total_abstinence: Ymatal llwyr
+        special_devotion_and_total_abstinence: Defosiwn ac ymatal llwyr
+        fast_and_abstinence: Ympryd ac ymatal
+        fast_and_total_abstinence: Ympryd ac ymatal llwyr
+        fasting_or_abstinence: Ympryd neu ymatal
+        fasting_with_abstinence: Ympryd gydag ymatal
+        special_devotion: Defosiwn
+        discipline_and_conversion: Disgyblaeth a throedigaeth
+        discipline_and_self_denial: Disgyblaeth a hunanymwadiad
+        abstinence: Ymatal
+      motives:
+        ash_wednesday: Mae'r diwrnod hwn yn dechrau'r Garawys, cyfnod o baratoi edifeiriol
+          ar gyfer y Pasg.
+        good_friday: Mae'r diwrnod hwn yn cofio Dioddefaint a marwolaeth Iesu Grist.
+        lenten_weekday: Yn ystod y Garawys, gwahoddir yr Eglwys i ddyfnhau gweddi,
+          edifeirwch a pharatoad ar gyfer y Pasg.
+        wednesday: Mae dydd Mercher yn cofio brad yr Arglwydd, ac fe'i cedwir gyda
+          dydd Gwener yn ymprydiau wythnosol.
+        friday: Mae dydd Gwener yn cofio croeshoeliad yr Arglwydd ac yn ein gwahodd
+          i weddi a hunanymwadiad.
+        ember_day: Mae Dyddiau Gŵyl y Tymhorau yn ddyddiau o weddi ac eiriolaeth,
+          yn enwedig dros weinidogaethau'r Eglwys.
+        rogation_day: Mae'r Dyddiau Rogasiwn yn ddyddiau o ddeisyfiad a diolch am
+          waith, y greadigaeth ac anghenion y byd.
+        vigil: Gwylnos yw amser o baratoi ar drothwy gŵyl.
+        principal_feast_vigil: Mae'r wylnos yn paratoi ar gyfer y Brif Ŵyl sy'n agosáu.
