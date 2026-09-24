@@ -51,13 +51,19 @@ func (s *Section) ToH() *rb.Map {
 func serialize(v any) any {
 	switch x := v.(type) {
 	case *Line:
+		if x == nil {
+			return nil
+		}
 		return x.ToH()
 	case *Section:
 		return x.ToH()
 	case []*Line:
+		// Metadata keeps nil lines (a missing text) as null, as Ruby does.
 		out := make([]any, len(x))
 		for i, l := range x {
-			out[i] = l.ToH()
+			if l != nil {
+				out[i] = l.ToH()
+			}
 		}
 		return out
 	case []any:
