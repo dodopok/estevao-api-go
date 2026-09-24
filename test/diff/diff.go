@@ -74,10 +74,27 @@ var alwaysVolatile = []string{"request_id", "trace_id"}
 
 var uuidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
+// volatileInValues are fragments of values that change with the clock:
+// the signing time and signature of a presigned storage URL.
+var volatileInValues = []struct {
+	re   *regexp.Regexp
+	repl string
+}{
+	{regexp.MustCompile(`X-Amz-Date=[0-9]{8}T[0-9]{6}Z`), "X-Amz-Date=<volatile>"},
+	{regexp.MustCompile(`X-Amz-Signature=[0-9a-f]{64}`), "X-Amz-Signature=<volatile>"},
+}
+
 // Normalize replaces volatile JSON values with a placeholder.
 func Normalize(r *Result, volatile []string) {
 	keys := append(append([]string{}, alwaysVolatile...), volatile...)
 	b := r.Body
+	for _, v := range volatileInValues {
+		nb := v.re.ReplaceAll(b, []byte(v.repl))
+		if !bytes.Equal(nb, b) {
+			r.Changed = true
+		}
+		b = nb
+	}
 	for _, k := range keys {
 		re := regexp.MustCompile(`"` + regexp.QuoteMeta(k) + `":("(?:[^"\\]|\\.)*"|-?[0-9.eE+]+|null|true|false)`)
 		nb := re.ReplaceAll(b, []byte(`"`+k+`":"<volatile>"`))

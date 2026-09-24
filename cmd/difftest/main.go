@@ -20,6 +20,7 @@ func main() {
 	goURL := flag.String("go", "http://localhost:3001", "Go server base URL")
 	suite := flag.String("suite", "all", "suite name (comma separated) or all")
 	maxFail := flag.Int("show", 30, "failures to print")
+	replay := flag.String("replay", "", "only send the suites' requests to this base URL (for effect snapshots)")
 	flag.Parse()
 
 	names := suites.Names()
@@ -36,6 +37,16 @@ func main() {
 			os.Exit(2)
 		}
 		sf := 0
+		if *replay != "" {
+			for _, req := range reqs {
+				if _, err := diff.Do(*replay, req); err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+			}
+			fmt.Printf("suite %-24s %5d requests replayed\n", name, len(reqs))
+			continue
+		}
 		for _, req := range reqs {
 			total++
 			a, err1 := diff.Do(*railsURL, req)

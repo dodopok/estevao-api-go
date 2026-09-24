@@ -89,3 +89,7 @@ const Production = true
 
 // RailsEnv is Rails.env (RAILS_ENV, "development" when unset).
 func RailsEnv() string { return PresenceOr("RAILS_ENV", "development") }
+
+// PublicDir is the directory Rails serves as public/ (the local audio files
+// live under public/audio). PUBLIC_DIR overrides the default "public".
+func PublicDir() string { return PresenceOr("PUBLIC_DIR", "public") }

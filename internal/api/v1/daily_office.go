@@ -17,13 +17,6 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
 
-// AudioTrack builds the office's audio track for a user with audio access
-// (DailyOfficeController#add_audio_track). Installed by the audio package.
-var AudioTrack func(c *web.Context, response *rb.Map, language, officeType, prayerBookCode string) *rb.Map
-
-// RecordAudioUsage enqueues Audio::UserUsageRecorder.record_later.
-var RecordAudioUsage func(ctx context.Context, userID int64, usages []*rb.Map)
-
 // withDailyOffice runs DailyOfficeController's before_actions and its
 // rescue_from handlers for the shared-office lookups.
 func withDailyOffice(validate bool, action func(c *web.Context, r *resolver)) web.HandlerFunc {
@@ -129,13 +122,7 @@ func renderOffice(c *web.Context, r *resolver, date civil.Date, officeType strin
 	premium := user != nil && user.Premium()
 	now := time.Now()
 	if features.EnabledFor(c.Ctx, "daily_office_audio", user, premium, now) {
-		lang := rb.ToS(response.Get("metadata").(*rb.Map).Get("language"))
-		if lang == "" {
-			lang = r.language()
-		}
-		if AudioTrack != nil {
-			response = AudioTrack(c, response, lang, officeType, r.code())
-		}
+		response = addAudioTrack(c, r, response, user)
 	}
 	response.Set("features", features.ForUser(c.Ctx, user, premium, now))
 	if user != nil {
@@ -241,7 +228,7 @@ func addAudioURLs(ctx context.Context, response *rb.Map, svc *dailyoffice.Servic
 		}
 	}
 	walk(response)
-	if len(used) > 0 && RecordAudioUsage != nil {
+	if len(used) > 0 {
 		usages := make([]*rb.Map, len(used))
 		for i, t := range used {
 			usages[i] = rb.M("audio_type", "liturgical_text", "asset_key", itoa64(t.ID)+":"+voice,

@@ -342,3 +342,38 @@ func ClassName(v any) string {
 	}
 	return "Object"
 }
+
+// RoundFloat ports Float#round(ndigits) for ndigits in 1..14 (round half up,
+// with Ruby's overflow/underflow short cuts and its correction step).
+func RoundFloat(number float64, ndigits int) float64 {
+	if number == 0 || ndigits <= 0 || ndigits > 14 {
+		if ndigits <= 0 {
+			return math.Round(number)
+		}
+		return number
+	}
+	_, binexp := math.Frexp(number)
+	var over, under int
+	if binexp > 0 {
+		over, under = binexp/4, binexp/3+1
+	} else {
+		over, under = binexp/3-1, binexp/4
+	}
+	if ndigits >= 17-over {
+		return number
+	}
+	if number > 0 && ndigits < -under {
+		return 0
+	}
+	s := math.Pow(10, float64(ndigits))
+	x := number
+	f := math.Round(x * s)
+	if x > 0 {
+		if (f+0.5)/s <= x {
+			f++
+		}
+	} else if (f-0.5)/s >= x {
+		f--
+	}
+	return f / s
+}
