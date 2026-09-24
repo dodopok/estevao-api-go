@@ -308,7 +308,9 @@ func (b *loc1662) morning() []*Section {
 		One(func() *Section { return b.prayers(p) }),
 		One(func() *Section { return b.lordsPrayerRepeated(p) }),
 		One(func() *Section { return b.suffrages(p) }),
-		One(func() *Section { return b.CollectOfDaySection(b.label("collect_of_the_day"), "morning_collects_rubric") }),
+		One(func() *Section {
+			return b.CollectOfDaySection(b.label("collect_of_the_day"), "morning_collects_rubric")
+		}),
 		One(func() *Section {
 			return b.TextSection(b.label("fixed_collects"), "fixed_collects", []Entry{
 				{Slug: "morning_collect_peace", Heading: true},
@@ -404,7 +406,9 @@ func (b *loc1662) evening() []*Section {
 		One(func() *Section { return b.prayers(p) }),
 		One(func() *Section { return b.lordsPrayerRepeated(p) }),
 		One(func() *Section { return b.suffrages(p) }),
-		One(func() *Section { return b.CollectOfDaySection(b.label("collect_of_the_day"), "evening_collects_rubric") }),
+		One(func() *Section {
+			return b.CollectOfDaySection(b.label("collect_of_the_day"), "evening_collects_rubric")
+		}),
 		One(func() *Section {
 			lines := b.titled(nil, "evening_collect_peace", "leader")
 			lines = b.titled(lines, "evening_collect_perils", "leader")
