@@ -57,7 +57,7 @@ func init() {
 		get := func(path string, h map[string]string) diff.Request {
 			// Dashboard values that move with the clock: the ages of the oldest
 			// pending items and the audio operation timestamps.
-			return diff.Request{Path: path, Headers: h, Volatile: []string{"oldest_pending_age_seconds"}}
+			return diff.Request{Path: path, Headers: h, Volatile: []string{"oldest_pending_age_seconds"}, AnyKeyOrder: true}
 		}
 		sections := []string{"overview", "users", "completions", "prayer_books", "journals", "audio", "notifications",
 			"life_rules", "shared_offices", "engagement", "moderation", "health", "retention", "onboarding", "premium",

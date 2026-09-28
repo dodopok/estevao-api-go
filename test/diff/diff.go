@@ -37,6 +37,11 @@ type Request struct {
 	// rather than from the body (stale?(etag:)), so it is compared even when
 	// a volatile body value was normalized.
 	KeyedETag bool
+	// AnyKeyOrder compares JSON objects regardless of key order (and so
+	// skips ETag and Content-Length): for hashes built from an unordered
+	// GROUP BY, whose order PostgreSQL does not keep between runs of the
+	// same query (docs/EQUIVALENCE.md).
+	AnyKeyOrder bool
 }
 
 // Result is a normalized response.
@@ -106,6 +111,17 @@ func Normalize(r *Result, volatile []string) {
 func NormalizeRequest(r *Result, req Request) {
 	r.KeyedETag = req.KeyedETag
 	r.normalize(req.Volatile)
+	if req.AnyKeyOrder {
+		var v any
+		dec := json.NewDecoder(bytes.NewReader(r.Body))
+		dec.UseNumber() // 0.0 and 0 stay distinct
+		if dec.Decode(&v) == nil {
+			if b, err := json.Marshal(v); err == nil {
+				r.Body = b
+				r.Changed = true
+			}
+		}
+	}
 }
 
 func (r *Result) normalize(volatile []string) {

@@ -131,7 +131,8 @@ func floatSum(ctx context.Context, sql string, args ...any) any {
 	var f *float64
 	must(db.Q().QueryRow(ctx, sql, args...).Scan(&f))
 	if f == nil {
-		return 0
+		// sum casts `value || 0` through the float column: 0.0.
+		return 0.0
 	}
 	return *f
 }
