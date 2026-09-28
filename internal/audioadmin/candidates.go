@@ -16,14 +16,14 @@ import (
 
 // Candidate is an audio_clip_candidates row.
 type Candidate struct {
-	ID, AudioClipID                                        int64
-	Key, Filename, Text, LineType, Provider, Model, Voice  string
-	Language, Status                                       string
-	Speed                                                  float64
-	Duration                                               *float64
-	CharacterCount                                         int64
-	InstructionsSHA, Fingerprint, CustomInstructionsSHA    *string
-	CustomInstructions                                     *string
+	ID, AudioClipID                                       int64
+	Key, Filename, Text, LineType, Provider, Model, Voice string
+	Language, Status                                      string
+	Speed                                                 float64
+	Duration                                              *float64
+	CharacterCount                                        int64
+	InstructionsSHA, Fingerprint, CustomInstructionsSHA   *string
+	CustomInstructions                                    *string
 }
 
 const candidateColumns = `id, audio_clip_id, key, filename, text, line_type, provider, model, voice, language, status, speed,

@@ -17,14 +17,14 @@ import (
 
 // Clip is an audio_clips row.
 type Clip struct {
-	ID                                                    int64
-	Key, Filename, Text, LineType, Kind, Provider, Voice  string
-	Model, Language                                       string
-	Speed                                                 float64
-	Duration                                              *float64
-	CharacterCount                                        int64
-	InstructionsSHA, Fingerprint, CustomInstructionsSHA   *string
-	CreatedAt, UpdatedAt                                  time.Time
+	ID                                                   int64
+	Key, Filename, Text, LineType, Kind, Provider, Voice string
+	Model, Language                                      string
+	Speed                                                float64
+	Duration                                             *float64
+	CharacterCount                                       int64
+	InstructionsSHA, Fingerprint, CustomInstructionsSHA  *string
+	CreatedAt, UpdatedAt                                 time.Time
 }
 
 // clipColumns is audio_clips.* in table order: a SELECT DISTINCT sorts on

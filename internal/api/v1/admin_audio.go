@@ -77,13 +77,13 @@ func invalidAudio(c *web.Context, message, code string) {
 // AdminAudioGenerationStatus ports #generation_status.
 var AdminAudioGenerationStatus = withAdminAudio(false, func(c *web.Context) {
 	type session struct {
-		id                                    int64
-		code, status                          string
-		voiceKeys                             []string
-		voice, errorLog                       *string
-		textID                                *int64
-		total, processed, failed              *int64
-		startedAt, completedAt                *time.Time
+		id                       int64
+		code, status             string
+		voiceKeys                []string
+		voice, errorLog          *string
+		textID                   *int64
+		total, processed, failed *int64
+		startedAt, completedAt   *time.Time
 	}
 	load := func(sql string) []session {
 		rows, err := db.Q().Query(c.Ctx, `SELECT id, prayer_book_code, status, voice_keys, current_voice_key, error_log, current_text_id,
