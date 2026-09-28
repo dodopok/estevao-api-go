@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -24,6 +25,7 @@ func main() {
 	railsRedis := flag.String("rails-redis", "redis://localhost:6379/1", "the oracle's cache (flushed before each scenario)")
 	goRedis := flag.String("go-redis", "redis://localhost:6379/2", "the Go server's cache (flushed before each scenario)")
 	replay := flag.String("replay", "", "only send the suites' requests to this base URL (for effect snapshots)")
+	dump := flag.String("dump", "", "write each scenario's steps and snapshots, per side, under this directory")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -51,6 +53,10 @@ func main() {
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "scenario %s (go): %v\n", sc.Name, err)
 					os.Exit(2)
+				}
+				if *dump != "" {
+					dumpScenario(*dump, name, sc.Name, "rails", a)
+					dumpScenario(*dump, name, sc.Name, "go", b)
 				}
 				if d := diff.CompareScenario(sc, a, b); len(d) > 0 {
 					failed++
@@ -113,4 +119,17 @@ func main() {
 	if failed > 0 {
 		os.Exit(1)
 	}
+}
+
+// dumpScenario writes one side's run as text for inspection.
+func dumpScenario(dir, suite, scenario, side string, r *diff.ScenarioResult) {
+	var b strings.Builder
+	for i, st := range r.Steps {
+		fmt.Fprintf(&b, "== step %d: %d\n%s\n", i+1, st.Status, st.Body)
+	}
+	for i, snap := range r.Snapshots {
+		fmt.Fprintf(&b, "== snapshot %d (%d rows)\n%s\n", i+1, len(snap), strings.Join(snap, "\n"))
+	}
+	_ = os.MkdirAll(dir, 0o755)
+	_ = os.WriteFile(filepath.Join(dir, suite+"."+scenario+"."+side+".txt"), []byte(b.String()), 0o644)
 }

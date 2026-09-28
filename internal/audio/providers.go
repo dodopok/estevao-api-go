@@ -30,6 +30,8 @@ type Provider struct {
 	// input is addressed alike.
 	ShortInputMax     int
 	shortInstructions string
+	// google is the memoized Cloud TTS client, which paces its requests.
+	google *googleClient
 }
 
 // MaxInputCharacters ports max_input_characters.
@@ -39,10 +41,15 @@ func (p *Provider) MaxInputCharacters() int { return DefaultMaxCharacters }
 // signature of every input outside the short class.
 func (p *Provider) CacheSignature(normalized *string) string {
 	base := p.Name + " " + p.Model + " " + rb.FloatToS(p.Speed) + " " + p.Language + " " + p.Instructions
-	if p.ShortInputMax == 0 || normalized == nil || rubyLen(strings.TrimSpace(*normalized)) > p.ShortInputMax {
+	if p.ShortInputMax == 0 || normalized == nil || !p.shortInput(*normalized) {
 		return base
 	}
 	return base + " short-input " + p.shortInstructions
+}
+
+// shortInput ports Google#short_input?(text).
+func (p *Provider) shortInput(text string) bool {
+	return p.ShortInputMax > 0 && rubyLen(rb.Strip(text)) <= p.ShortInputMax
 }
 
 // ArgumentError mirrors the Ruby exception raised for an unknown provider.
@@ -179,7 +186,7 @@ func google(language *string) *Provider {
 	if v := os.Getenv("GOOGLE_TTS_INSTRUCTIONS"); !rb.BlankString(v) {
 		p.Instructions = v
 	} else {
-		p.Instructions = byLanguage(googleInstructions, p.Language, googleInstructions["pt-BR"])
+		p.Instructions = byLanguage(googleInstructions, p.Language, "")
 	}
 	p.ShortInputMax = 120
 	if raw, ok := os.LookupEnv("GOOGLE_TTS_SHORT_INPUT_MAX_CHARACTERS"); ok {

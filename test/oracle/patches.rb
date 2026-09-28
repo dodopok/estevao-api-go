@@ -58,7 +58,10 @@ end
 # base URLs to the fakes named by the same variables the Go server reads.
 ORACLE_HTTP_REWRITES = {
   "https://api.revenuecat.com/v1" => ENV["REVENUECAT_API_URL"].presence,
-  "https://api.perplexity.ai" => ENV["PERPLEXITY_API_URL"].presence
+  "https://api.perplexity.ai" => ENV["PERPLEXITY_API_URL"].presence,
+  "https://api.openai.com" => ENV["OPENAI_API_URL"].presence,
+  "https://texttospeech.googleapis.com" => ENV["GOOGLE_TTS_API_URL"].presence,
+  "https://api.elevenlabs.io" => ENV["ELEVENLABS_API_URL"].presence
 }.compact.freeze
 unless ORACLE_HTTP_REWRITES.empty?
   require "http"

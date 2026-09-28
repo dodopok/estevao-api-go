@@ -357,3 +357,19 @@ func ClipPayloadFiltered(ctx context.Context, c *Clip, fps map[string]Expectatio
 		"candidates", candidatesPayload(ctx, c), "usages", usagesPayload(ctx, c, filters),
 	)
 }
+
+// Batch ports one find_each batch of the relation: up to limit clips after
+// the given id, in id order.
+func (q *ClipQuery) Batch(ctx context.Context, after int64, limit int) []*Clip {
+	from, args := q.where(ctx)
+	args = append(args, after)
+	cond := `audio_clips.id > $` + strconv.Itoa(len(args))
+	if strings.Contains(from, " WHERE ") {
+		from += " AND " + cond
+	} else {
+		from += " WHERE " + cond
+	}
+	rows, err := db.Q().Query(ctx, `SELECT DISTINCT `+clipColumns+` FROM `+from+` ORDER BY audio_clips.id ASC LIMIT `+strconv.Itoa(limit), args...)
+	must(err)
+	return scanClips(rows)
+}

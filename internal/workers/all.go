@@ -5,6 +5,7 @@ package workers
 import (
 	_ "github.com/dodopok/estevao-api-go/internal/activestorage"
 	_ "github.com/dodopok/estevao-api-go/internal/audio"
+	_ "github.com/dodopok/estevao-api-go/internal/audiogen"
 	_ "github.com/dodopok/estevao-api-go/internal/notify"
 	_ "github.com/dodopok/estevao-api-go/internal/rosary"
 )

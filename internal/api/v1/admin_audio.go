@@ -9,6 +9,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/audio"
 	"github.com/dodopok/estevao-api-go/internal/audioadmin"
+	"github.com/dodopok/estevao-api-go/internal/audiogen"
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
@@ -465,14 +466,38 @@ func generationArguments(c *web.Context) (*rb.Map, bool, bool) {
 		args.Set("preferences", m)
 	} else {
 		args.Set("preferences", rb.NewMap())
-		indifferentPrefs := false
-		_ = indifferentPrefs
 	}
 	if v := presence(p.Get("variants")); v != nil {
 		args.Set("variants", v)
 	}
 	return args, indifferent, true
 }
+
+// AdminAudioEstimate ports #estimate.
+var AdminAudioEstimate = withAdminAudio(false, func(c *web.Context) {
+	args, _, ok := generationArguments(c)
+	if !ok {
+		return
+	}
+	start, _ := civil.ParseISO(rb.ToS(args.Get("start_date")))
+	preferences, _ := args.Get("preferences").(*rb.Map)
+	variants, err := audiogen.VariantsArg(args.Get("variants"))
+	if err == nil {
+		var estimate *rb.Map
+		estimate, err = audiogen.Estimate(c.Ctx, audiogen.EstimateArguments{PrayerBookCode: rb.ToS(args.Get("prayer_book_code")),
+			StartDate: start, Days: args.Get("days").(int64), Offices: audiogen.StringsOf(args.Get("offices")),
+			Preferences: preferences, Variants: variants})
+		if err == nil {
+			c.JSON(200, rb.M("estimate", estimate))
+			return
+		}
+	}
+	if class := solidqueue.ClassOf(err); class == "ArgumentError" || class == "Date::Error" {
+		invalidAudio(c, err.Error(), "INVALID_AUDIO_GENERATION")
+		return
+	}
+	panic(err)
+})
 
 // AdminAudioGenerate ports #generate.
 var AdminAudioGenerate = withAdminAudio(false, func(c *web.Context) {

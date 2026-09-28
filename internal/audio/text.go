@@ -92,6 +92,9 @@ func splitWords(sentence string, limit int) []string {
 
 // --- Audio::SpeakableLine ----------------------------------------------------
 
+// Spoken ports SpeakableLine::SPOKEN.include?(type).
+func Spoken(lineType string) bool { return spokenTypes[lineType] }
+
 var spokenTypes = map[string]bool{
 	"all": true, "anthem": true, "antiphon": true, "canticle": true, "congregation": true, "creed": true,
 	"leader": true, "prayer": true, "reader": true, "reading_text": true, "responsive": true, "text": true,

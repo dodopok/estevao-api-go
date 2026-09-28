@@ -5,8 +5,6 @@ package audioadmin
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"math"
 	"strconv"
@@ -44,8 +42,7 @@ func (e Expectation) Fingerprints() []string {
 
 // Fingerprint ports Audio::Profile#configuration_fingerprint(normalized).
 func Fingerprint(p *audio.Provider, normalized *string) string {
-	sum := sha256.Sum256([]byte("v2\x00" + p.Voice + "\x00" + p.CacheSignature(normalized)))
-	return hex.EncodeToString(sum[:])
+	return p.ConfigurationFingerprint(normalized)
 }
 
 // ExpectationFor ports Audio::Profile#expectation.

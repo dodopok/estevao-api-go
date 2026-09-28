@@ -24,9 +24,9 @@ func addAudioTrack(c *web.Context, r *resolver, response *rb.Map, user *users.Us
 	var keys []string
 	var record audio.ClipKeyRecorder
 	if user != nil {
-		record = func(key string) { keys = append(keys, key) }
+		record = func(key, _ string) { keys = append(keys, key) }
 	}
-	track, err := audio.BuildTrack(c.Ctx, audio.NewGenerator(provider), response, record)
+	track, err := audio.BuildTrack(c.Ctx, audio.NewGenerator(provider), response, false, record)
 	must(err)
 	if user != nil {
 		recordAudioClipUsage(c, r, user, provider, keys)

@@ -69,7 +69,8 @@ func EnqueueOperation(ctx context.Context, kind string, parameters *rb.Map, pray
 // MarkRunning ports mark_running!.
 func MarkRunning(ctx context.Context, id int64) {
 	t := time.Now().UTC()
-	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'running', started_at = COALESCE(started_at, $2), updated_at = $2 WHERE id = $1`, id, t)
+	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'running', started_at = COALESCE(started_at, $2),
+		updated_at = CASE WHEN status <> 'running' OR started_at IS NULL THEN $2 ELSE updated_at END WHERE id = $1`, id, t)
 }
 
 // Progress is update_progress!'s values (nil fields keep the stored value).
@@ -77,29 +78,35 @@ type Progress struct {
 	Processed, Total, Generated, Skipped, Failed, Characters *int64
 }
 
-// UpdateProgress ports update_progress!.
-func UpdateProgress(ctx context.Context, id int64, p Progress) {
-	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET processed_items = COALESCE($2, processed_items),
+// UpdateProgress ports update_progress! (updated_at moves only when a
+// counter changed, as a no-op update! leaves the row alone).
+func UpdateProgress(ctx context.Context, id int64, p Progress) error {
+	_, err := db.Q().Exec(ctx, `UPDATE audio_operations SET processed_items = COALESCE($2, processed_items),
 		total_items = COALESCE($3, total_items), generated_clips = COALESCE($4, generated_clips),
 		skipped_clips = COALESCE($5, skipped_clips), failed_items = COALESCE($6, failed_items),
-		generated_characters = COALESCE($7, generated_characters), updated_at = $8 WHERE id = $1`,
+		generated_characters = COALESCE($7, generated_characters),
+		updated_at = CASE WHEN (processed_items, total_items, generated_clips, skipped_clips, failed_items, generated_characters)
+			IS DISTINCT FROM (COALESCE($2, processed_items), COALESCE($3, total_items), COALESCE($4, generated_clips),
+			COALESCE($5, skipped_clips), COALESCE($6, failed_items), COALESCE($7, generated_characters))
+			THEN $8 ELSE updated_at END WHERE id = $1`,
 		id, p.Processed, p.Total, p.Generated, p.Skipped, p.Failed, p.Characters, time.Now().UTC())
+	return err
 }
 
 // MarkCompleted ports mark_completed!(values): progress, then status and
 // the values as the result.
-func MarkCompleted(ctx context.Context, id int64, p Progress, result *rb.Map) {
-	UpdateProgress(ctx, id, p)
-	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'completed', completed_at = $2, result = $3::jsonb, updated_at = $2 WHERE id = $1`,
+func MarkCompleted(ctx context.Context, id int64, p Progress, result *rb.Map) error {
+	if err := UpdateProgress(ctx, id, p); err != nil {
+		return err
+	}
+	_, err := db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'completed', completed_at = $2, result = $3::jsonb, updated_at = $2 WHERE id = $1`,
 		id, time.Now().UTC(), string(rb.JSON(result)))
+	return err
 }
 
-// MarkFailed ports mark_failed!(error).
+// MarkFailed ports mark_failed!(error): "Class: message".
 func MarkFailed(ctx context.Context, id int64, class, message string) {
-	msg := class
-	if message != "" {
-		msg += ": " + message
-	}
+	msg := class + ": " + message
 	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'failed', completed_at = $2, error_message = $3, updated_at = $2 WHERE id = $1`,
 		id, time.Now().UTC(), msg)
 }

@@ -11,6 +11,9 @@ type RubyError struct {
 
 func (e *RubyError) Error() string { return e.Message }
 
+// RubyClass names the exception class (solidqueue.RubyClassed).
+func (e *RubyError) RubyClass() string { return e.Class }
+
 // RaiseNoMethodOnNil mirrors calling +method+ on nil (Ruby 3.2 wording).
 func RaiseNoMethodOnNil(method string) {
 	panic(&RubyError{Class: "NoMethodError", Message: "undefined method `" + method + "' for nil:NilClass"})

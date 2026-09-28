@@ -17,6 +17,7 @@ func Endpoints() map[string]web.HandlerFunc {
 		"api/v1/admin/audio#operations":              AdminAudioOperations,
 		"api/v1/admin/audio#operation":               AdminAudioOperation,
 		"api/v1/admin/audio#generate":                AdminAudioGenerate,
+		"api/v1/admin/audio#estimate":                AdminAudioEstimate,
 		"api/v1/admin/audio#cleanup_preview":         AdminAudioCleanupPreview,
 		"api/v1/admin/audio#cleanup":                 AdminAudioCleanup,
 		"api/v1/admin/audio#generate_catalog":        AdminAudioGenerateCatalog,

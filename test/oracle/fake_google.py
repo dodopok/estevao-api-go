@@ -31,6 +31,7 @@ FCM (POST /v1/projects/<project>/messages:send, bearer "fake-admin-token")
 answers per registration token from FCM below (200 otherwise). GET /__fcm
 lists the requests (sorted); DELETE clears.
 """
+import base64
 import json
 import re
 import sys
@@ -45,6 +46,41 @@ strapi_requests = []
 fcm_requests = []
 stripe_requests = []
 lock = threading.Lock()
+
+# Speech providers (Audio::Providers::*): every call is recorded as
+# "provider auth-header canonical-json" and answered with MPEG-1 Layer III
+# frames whose count depends on the text, so the stored clip's duration is
+# deterministic. A text containing TTS-<status> is answered with that status.
+tts_requests = []
+TTS_AUTH = {"openai": ("Authorization", "Bearer sk-openai-test"),
+            "google": ("Authorization", "Bearer fake-admin-token"),
+            "elevenlabs": ("xi-api-key", "eleven-test-key")}
+
+
+def fake_mp3(text):
+    frames = 1 + len(text.encode()) // 8
+    frame = b"\xff\xfb\x90\x00" + (text.encode()[:32].ljust(32, b"-")) + bytes(417 - 36)
+    return b"ID3\x03\x00\x00\x00\x00\x00\x00" + frame * min(frames, 400)
+
+
+def tts_reply(provider, headers, payload):
+    name, expected = TTS_AUTH[provider]
+    if headers.get(name) != expected:
+        return 401, None
+    extra = ""
+    if provider == "google":
+        extra = " project=" + str(headers.get("x-goog-user-project"))
+        text = payload["input"]["text"]
+    elif provider == "openai":
+        text = payload["input"]
+    else:
+        text = payload["text"]
+    with lock:
+        tts_requests.append(provider + extra + " " + json.dumps(payload, sort_keys=True, ensure_ascii=False))
+    m = re.search(r"TTS-(\d{3})", text)
+    if m:
+        return int(m.group(1)), None
+    return 200, fake_mp3(text)
 
 
 def entitlement(expires, product="ordo_plus_monthly", will_renew=True):
@@ -106,7 +142,17 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def reply_bytes(self, status, body, content_type="audio/mpeg"):
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
+        if self.path == "/__tts":
+            with lock:
+                return self.reply(200, sorted(tts_requests))
         if self.path == "/__deleted":
             with lock:
                 return self.reply(200, list(deleted))
@@ -150,6 +196,10 @@ class Handler(BaseHTTPRequestHandler):
         self.reply(404, {})
 
     def do_DELETE(self):
+        if self.path == "/__tts":
+            with lock:
+                tts_requests.clear()
+            return self.reply(200, {})
         if self.path == "/__deleted":
             with lock:
                 deleted.clear()
@@ -202,6 +252,23 @@ class Handler(BaseHTTPRequestHandler):
             if isinstance(body, str):
                 return self.reply_raw(status, body)
             return self.reply(status, body)
+        tts = None
+        if self.path == "/openai/v1/audio/speech":
+            tts = "openai"
+        elif self.path == "/google-tts/v1/text:synthesize":
+            tts = "google"
+        elif self.path.startswith("/elevenlabs/v1/text-to-speech/"):
+            tts = "elevenlabs"
+        if tts:
+            payload = json.loads(data)
+            if tts == "elevenlabs":
+                payload["voice_id"] = self.path.rsplit("/", 1)[1]
+            status, audio = tts_reply(tts, self.headers, payload)
+            if audio is None:
+                return self.reply(status, {"error": {"message": "fake failure"}})
+            if tts == "google":
+                return self.reply(200, {"audioContent": base64.b64encode(audio).decode()})
+            return self.reply_bytes(200, audio)
         if self.path == "/token":
             if b"assertion=" not in data:
                 return self.reply(400, {"error": "invalid_grant"})

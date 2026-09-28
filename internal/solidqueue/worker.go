@@ -128,6 +128,39 @@ func (e *Execution) Kwarg(name string) any {
 	return nil
 }
 
+// kwargs returns the trailing keyword hash (nil when the job has none).
+func (e *Execution) kwargs() *rb.Map {
+	if n := len(e.serialArgs); n > 0 && IsKwargs(e.serialArgs[n-1]) {
+		if m, ok := e.Arguments[n-1].(*rb.Map); ok {
+			return m
+		}
+	}
+	return nil
+}
+
+// HasKwarg reports whether the keyword was passed (a Ruby default applies
+// otherwise).
+func (e *Execution) HasKwarg(name string) bool {
+	m := e.kwargs()
+	return m != nil && m.Has(name)
+}
+
+// KwargOr returns the keyword argument, or def when it was not passed.
+func (e *Execution) KwargOr(name string, def any) any {
+	if m := e.kwargs(); m != nil && m.Has(name) {
+		return m.Get(name)
+	}
+	return def
+}
+
+// Positional returns the arguments before the keyword hash.
+func (e *Execution) Positional() []any {
+	if e.kwargs() != nil {
+		return e.Arguments[:len(e.Arguments)-1]
+	}
+	return e.Arguments
+}
+
 var (
 	registryMu sync.RWMutex
 	registry   = map[string]Handler{}

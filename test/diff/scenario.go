@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -30,6 +31,25 @@ type Scenario struct {
 	// Settle runs after the steps and before the snapshot (e.g. performs
 	// the jobs the oracle enqueued).
 	Settle func(side Side) error
+	// Teardown is SQL run after the snapshots (fixtures that must not
+	// outlive the scenario).
+	Teardown string
+	// Scrub rewrites every snapshot line (values that are random by
+	// design, such as a candidate file's suffix).
+	Scrub []Scrub
+}
+
+// Scrub is one regexp replacement applied to snapshot lines.
+type Scrub struct {
+	Pattern *regexp.Regexp
+	Replace string
+}
+
+func (s Scenario) scrub(line string) string {
+	for _, x := range s.Scrub {
+		line = x.Pattern.ReplaceAllString(line, x.Replace)
+	}
+	return line
 }
 
 // Side is one server under test.
@@ -132,7 +152,7 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 			for i, v := range vals {
 				parts[i] = fmt.Sprintf("%v", v)
 			}
-			lines = append(lines, strings.Join(parts, " | "))
+			lines = append(lines, s.scrub(strings.Join(parts, " | ")))
 		}
 		rows.Close()
 		if err := rows.Err(); err != nil {
@@ -147,7 +167,12 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		}
 		b, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-		out.Snapshots = append(out.Snapshots, []string{string(b)})
+		out.Snapshots = append(out.Snapshots, []string{s.scrub(string(b))})
+	}
+	if s.Teardown != "" {
+		if _, err := conn.Exec(ctx, s.Teardown); err != nil {
+			return nil, fmt.Errorf("teardown: %w", err)
+		}
 	}
 	return out, nil
 }

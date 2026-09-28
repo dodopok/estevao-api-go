@@ -151,11 +151,21 @@ func resetFakeS3() error {
 // worker); the Go server runs them in-process, so it only needs a moment.
 func settleJobs(classes ...string) func(side diff.Side) error { return settle(false, classes) }
 
+// settleJobsEnv performs the jobs with extra environment variables (both
+// performers are separate processes).
+func settleJobsEnv(env []string, classes ...string) func(side diff.Side) error {
+	return settleWith(false, classes, env)
+}
+
 // enqueueAndSettle enqueues each class with no arguments (a recurring
 // run) and performs them.
 func enqueueAndSettle(classes ...string) func(side diff.Side) error { return settle(true, classes) }
 
 func settle(enqueue bool, classes []string) func(side diff.Side) error {
+	return settleWith(enqueue, classes, nil)
+}
+
+func settleWith(enqueue bool, classes []string, env []string) func(side diff.Side) error {
 	return func(side diff.Side) error {
 		// DIFF_CROSS_JOBS=1 swaps the performers: the Go worker performs the
 		// jobs Rails enqueued and the Rails runner those Go enqueued, so equal
@@ -171,7 +181,9 @@ func settle(enqueue bool, classes []string) func(side diff.Side) error {
 			if enqueue {
 				flags = append(flags, "-enqueue")
 			}
-			out, err := exec.Command(worker, append(flags, classes...)...).CombinedOutput()
+			cmd := exec.Command(worker, append(flags, classes...)...)
+			cmd.Env = append(os.Environ(), env...)
+			out, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("%v: %s", err, out)
 			}
@@ -187,7 +199,9 @@ func settle(enqueue bool, classes []string) func(side diff.Side) error {
 			name = "enqueue_jobs.rb"
 		}
 		script := filepath.Join(filepath.Dir(file), "..", "..", "effects", name)
-		out, err := exec.Command(runner, append([]string{script}, classes...)...).CombinedOutput()
+		cmd := exec.Command(runner, append([]string{script}, classes...)...)
+		cmd.Env = append(os.Environ(), env...)
+		out, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("%v: %s", err, out)
 		}
