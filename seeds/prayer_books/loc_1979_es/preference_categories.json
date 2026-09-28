@@ -1,0 +1,7 @@
+[
+{"description": "Configuración general del oficio diario", "icon": "settings", "key": "daily_office_general", "name": "Oficio diario", "position": 1, "prayer_book": "loc_1979_es"},
+{"description": "Opciones para la Oración de la Mañana", "icon": "wb_sunny", "key": "morning_prayer", "name": "Oración de la Mañana", "position": 2, "prayer_book": "loc_1979_es"},
+{"description": "Opciones para la Oración del Atardecer", "icon": "wb_twilight", "key": "evening_prayer", "name": "Oración del Atardecer", "position": 3, "prayer_book": "loc_1979_es"},
+{"description": "Opciones para la Oración del Mediodía", "icon": "sunny", "key": "midday_prayer", "name": "Oración del Mediodía", "position": 4, "prayer_book": "loc_1979_es"},
+{"description": "Opciones para la Oración de la Noche", "icon": "bedtime", "key": "compline", "name": "Oración de la Noche", "position": 5, "prayer_book": "loc_1979_es"}
+]

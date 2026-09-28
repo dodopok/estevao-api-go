@@ -1,0 +1,11 @@
+[
+{"hex_code": "#FFFFFF", "name": "branco", "usage_description": "Natal, Páscoa, Festas do Senhor, Santos não-mártires, Funerais"},
+{"hex_code": "#DC143C", "name": "vermelho", "usage_description": "Semana Santa (exceto Quinta-feira Santa), Pentecostes, Mártires, Confirmações e Ordenações"},
+{"hex_code": "#800080", "name": "roxo", "usage_description": "Quaresma (desde Quarta-feira de Cinzas até véspera de Domingo de Ramos)"},
+{"hex_code": "#8B00FF", "name": "violeta", "usage_description": "Advento (preferencial)"},
+{"hex_code": "#00008B", "name": "azul_escuro", "usage_description": "Advento (alternativo)"},
+{"hex_code": "#FFB6C1", "name": "rosa", "usage_description": "3º Domingo do Advento e 4º Domingo na Quaresma"},
+{"hex_code": "#228B22", "name": "verde", "usage_description": "Tempo Comum"},
+{"hex_code": "#000000", "name": "preto", "usage_description": "Sexta-feira da Paixão (opcional), Funerais (opcional)"},
+{"hex_code": "#F5DEB3", "name": "pano_cru", "usage_description": "Quaresma (alternativo ao roxo)"}
+]

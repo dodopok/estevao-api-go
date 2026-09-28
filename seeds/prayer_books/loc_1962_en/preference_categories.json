@@ -1,0 +1,6 @@
+[
+{"description": "Options that apply to the Canadian Daily Office", "icon": "menu_book", "key": "daily_office", "name": "Daily Office", "position": 0, "prayer_book": "loc_1962_en"},
+{"description": "Configure Morning Prayer as you prefer", "icon": "wb_sunny", "key": "morning_prayer", "name": "Morning Prayer", "position": 1, "prayer_book": "loc_1962_en"},
+{"description": "Configure Evening Prayer as you prefer", "icon": "dark_mode", "key": "evening_prayer", "name": "Evening Prayer", "position": 2, "prayer_book": "loc_1962_en"},
+{"description": "Configure Compline as you prefer", "icon": "bedtime", "key": "compline", "name": "Compline", "position": 3, "prayer_book": "loc_1962_en"}
+]

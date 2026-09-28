@@ -1,0 +1,6 @@
+[
+{"description": "Options expressly provided in Common Worship: Daily Prayer", "icon": "auto_stories", "key": "daily_office", "name": "Daily Prayer", "position": 1, "prayer_book": "cw_2005_en"},
+{"description": "Authorized alternatives in the Common Worship morning order", "icon": "wb_sunny", "key": "morning_prayer", "name": "Morning Prayer", "position": 2, "prayer_book": "cw_2005_en"},
+{"description": "The official order permits short readings or lectionary readings.", "icon": "sunny", "key": "prayer_during_day", "name": "Prayer During the Day", "position": 3, "prayer_book": "cw_2005_en"},
+{"description": "Authorized alternatives in the Common Worship evening order", "icon": "dark_mode", "key": "evening_prayer", "name": "Evening Prayer", "position": 4, "prayer_book": "cw_2005_en"}
+]

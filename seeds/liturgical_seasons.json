@@ -1,0 +1,8 @@
+[
+{"color": "violeta", "description": "Tempo de preparação para o Natal", "name": "Advento"},
+{"color": "branco", "description": "Celebração da Natividade do Senhor", "name": "Natal"},
+{"color": "verde", "description": "Manifestação de Cristo ao mundo", "name": "Epifania"},
+{"color": "roxo", "description": "Tempo de penitência e preparação para a Páscoa", "name": "Quaresma"},
+{"color": "branco", "description": "Celebração da Ressurreição do Senhor", "name": "Páscoa"},
+{"color": "verde", "description": "Tempo de crescimento espiritual", "name": "Tempo Comum"}
+]

@@ -1,0 +1,8 @@
+[
+{"description": "Opções aplicáveis a todas as Horas", "icon": "menu_book", "key": "daily_office", "name": "Ofício Diário", "position": 1, "prayer_book": "awrv_2025_pt"},
+{"description": "A introdução penitencial às Matinas e às Vésperas", "icon": "self_improvement", "key": "fore_office", "name": "Ofício Preparatório", "position": 2, "prayer_book": "awrv_2025_pt"},
+{"description": "A Ordem da Oração Matutina Diária", "icon": "wb_sunny", "key": "morning_prayer", "name": "Matinas", "position": 3, "prayer_book": "awrv_2025_pt"},
+{"description": "Prima, Terça, Sexta e Noa — as Horas que o livro imprime entre as Matinas e as Vésperas", "icon": "light_mode", "key": "little_hours", "name": "Horas Menores", "position": 4, "prayer_book": "awrv_2025_pt"},
+{"description": "A Ordem da Oração Vespertina Diária", "icon": "nights_stay", "key": "evening_prayer", "name": "Vésperas", "position": 5, "prayer_book": "awrv_2025_pt"},
+{"description": "A Hora das Completas", "icon": "bedtime", "key": "compline", "name": "Completas", "position": 6, "prayer_book": "awrv_2025_pt"}
+]

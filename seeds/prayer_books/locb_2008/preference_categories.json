@@ -1,0 +1,18 @@
+[
+{"description": "Customize as orações e elementos do ofício diário", "icon": "auto_stories", "key": "daily_office", "name": "Ofício Diário", "position": 1, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da manhã como preferir", "icon": "wb_sunny", "key": "morning_prayer", "name": "Tipo da Oração da Manhã", "position": 2, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício do meio-dia como preferir", "icon": "wb_sunny_outlined", "key": "midday_prayer", "name": "Oração do Meio-Dia", "position": 3, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da tarde como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer", "name": "Tipo da Oração da Tarde", "position": 4, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da noite como preferir", "icon": "nightlight_round", "key": "compline_prayer", "name": "Tipo da Oração da Noite", "position": 5, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da manhã I como preferir", "icon": "wb_sunny", "key": "morning_prayer_1", "name": "Oração da Manhã I", "position": 6, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da manhã II como preferir", "icon": "wb_sunny", "key": "morning_prayer_2", "name": "Oração da Manhã II", "position": 7, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da manhã III como preferir", "icon": "wb_sunny", "key": "morning_prayer_3", "name": "Oração da Manhã III", "position": 8, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da manhã IV como preferir", "icon": "wb_sunny", "key": "morning_prayer_4", "name": "Oração da Manhã IV", "position": 9, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da tarde I como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer_1", "name": "Oração da Tarde I", "position": 10, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da tarde II como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer_2", "name": "Oração da Tarde II", "position": 11, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da tarde III como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer_3", "name": "Oração da Tarde III", "position": 12, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício da tarde IV como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer_4", "name": "Oração da Tarde IV", "position": 13, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício das completas I como preferir", "icon": "wb_sunny_outlined", "key": "compline_prayer_1", "name": "Oração da Noite I", "position": 14, "prayer_book": "locb_2008"},
+{"description": "Configure o ofício das completas II como preferir", "icon": "wb_sunny_outlined", "key": "compline_prayer_2", "name": "Oração da Noite II", "position": 15, "prayer_book": "locb_2008"},
+{"description": "Configurações do ofício simplificado para uso individual ou em família", "icon": "family_restroom", "key": "family_rite", "name": "Ofício Individual e Familiar", "position": 16, "prayer_book": "locb_2008"}
+]

@@ -1,0 +1,8 @@
+[
+{"description": "Options that apply to every Hour", "icon": "menu_book", "key": "daily_office", "name": "Daily Office", "position": 1, "prayer_book": "awrv_2025_en"},
+{"description": "The penitential introduction to Mattins and Evensong", "icon": "self_improvement", "key": "fore_office", "name": "Fore-Office", "position": 2, "prayer_book": "awrv_2025_en"},
+{"description": "The Order for Daily Morning Prayer", "icon": "wb_sunny", "key": "morning_prayer", "name": "Mattins", "position": 3, "prayer_book": "awrv_2025_en"},
+{"description": "Prime, Terce, Sext and None — the Hours the book prints between Mattins and Evensong", "icon": "light_mode", "key": "little_hours", "name": "The Little Hours", "position": 4, "prayer_book": "awrv_2025_en"},
+{"description": "The Order for Daily Evening Prayer", "icon": "nights_stay", "key": "evening_prayer", "name": "Evensong", "position": 5, "prayer_book": "awrv_2025_en"},
+{"description": "The Hour of Compline", "icon": "bedtime", "key": "compline", "name": "Compline", "position": 6, "prayer_book": "awrv_2025_en"}
+]

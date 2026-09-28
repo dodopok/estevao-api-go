@@ -1,0 +1,14 @@
+[
+{"name": "Advento", "position": 10, "slug": "advent"},
+{"name": "Natal", "position": 20, "slug": "christmas"},
+{"name": "Epifania", "position": 30, "slug": "epiphany"},
+{"name": "Quaresma", "position": 40, "slug": "lent"},
+{"name": "Semana Santa", "position": 50, "slug": "holy-week"},
+{"name": "Páscoa", "position": 60, "slug": "easter"},
+{"name": "Pentecostes", "position": 70, "slug": "pentecost"},
+{"name": "Tempo Comum", "position": 80, "slug": "ordinary-time"},
+{"name": "Oração da noite", "position": 90, "slug": "night-prayer"},
+{"name": "Instrumental", "position": 100, "slug": "instrumental"},
+{"name": "Canto", "position": 110, "slug": "chant"},
+{"name": "Coral", "position": 120, "slug": "choral"}
+]

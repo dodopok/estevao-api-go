@@ -1,0 +1,9 @@
+[
+{"description": "General settings for all daily offices", "icon": "settings", "key": "daily_office_general", "name": "Daily Office (General)", "position": 1, "prayer_book": "loc_1979_en"},
+{"description": "Options for traditional Morning Prayer", "icon": "wb_sunny", "key": "morning_prayer_rite_1", "name": "Morning Prayer (Rite I)", "position": 2, "prayer_book": "loc_1979_en"},
+{"description": "Options for contemporary Morning Prayer", "icon": "wb_sunny", "key": "morning_prayer_rite_2", "name": "Morning Prayer (Rite II)", "position": 3, "prayer_book": "loc_1979_en"},
+{"description": "Options for traditional Evening Prayer", "icon": "wb_twilight", "key": "evening_prayer_rite_1", "name": "Evening Prayer (Rite I)", "position": 4, "prayer_book": "loc_1979_en"},
+{"description": "Options for contemporary Evening Prayer", "icon": "wb_twilight", "key": "evening_prayer_rite_2", "name": "Evening Prayer (Rite II)", "position": 5, "prayer_book": "loc_1979_en"},
+{"description": "Configure Noonday Prayer options", "icon": "sunny", "key": "noonday_prayer", "name": "Noonday Prayer", "position": 6, "prayer_book": "loc_1979_en"},
+{"description": "Configure Compline options", "icon": "dark_mode", "key": "compline", "name": "Compline", "position": 7, "prayer_book": "loc_1979_en"}
+]

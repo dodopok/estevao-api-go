@@ -1,0 +1,8 @@
+[
+{"description": "Personalize as orações e elementos do Ofício Diário", "icon": "auto_stories", "key": "daily_office", "name": "Ofício Diário", "position": 1, "prayer_book": "loc_2019"},
+{"description": "Configure a Oração da Manhã como preferir", "icon": "wb_sunny", "key": "morning_prayer", "name": "Oração da Manhã", "position": 2, "prayer_book": "loc_2019"},
+{"description": "Configure a Oração do Meio-Dia como preferir", "icon": "sunny", "key": "midday_prayer", "name": "Oração do Meio-Dia", "position": 3, "prayer_book": "loc_2019"},
+{"description": "Configure a Oração da Noite como preferir", "icon": "dark_mode", "key": "evening_prayer", "name": "Oração da Noite", "position": 4, "prayer_book": "loc_2019"},
+{"description": "Configure as Completas como preferir", "icon": "bedtime", "key": "compline", "name": "Completas", "position": 5, "prayer_book": "loc_2019"},
+{"description": "Configure as leituras e preferências da Oração em Família", "icon": "family_restroom", "key": "family_prayer", "name": "Oração em Família", "position": 6, "prayer_book": "loc_2019"}
+]

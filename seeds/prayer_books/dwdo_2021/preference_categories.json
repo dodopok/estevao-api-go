@@ -1,0 +1,6 @@
+[
+{"description": "General settings for the Office", "icon": "settings", "key": "general", "name": "General", "position": 0, "prayer_book": "dwdo_2021"},
+{"description": "Configure Mattins (Morning Prayer) as you prefer", "icon": "wb_sunny", "key": "morning_prayer", "name": "Mattins", "position": 1, "prayer_book": "dwdo_2021"},
+{"description": "Configure Sext (Midday Prayer)", "icon": "light_mode", "key": "midday_prayer", "name": "Sext", "position": 2, "prayer_book": "dwdo_2021"},
+{"description": "Configure Compline as you prefer", "icon": "nightlight", "key": "compline", "name": "Compline", "position": 4, "prayer_book": "dwdo_2021"}
+]

@@ -64,7 +64,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback(ctx) //nolint:errcheck
+	defer tx.Rollback(ctx)               //nolint:errcheck
 	ids := map[string]map[string]int64{} // table -> natural key -> id
 	for _, mt := range manifest.Tables {
 		t := tableByName(mt.Name)
@@ -77,6 +77,22 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 		}
 		var batch []map[string]json.RawMessage
 		total := 0
+		gaps := map[int]int64{}
+		for _, g := range mt.Gaps {
+			gaps[g.Row] = g.Skip
+		}
+
+		flush := func() error {
+			if len(batch) == 0 {
+				return nil
+			}
+			if err := insert(ctx, tx, t.name, cols, batch); err != nil {
+				return err
+			}
+			total += len(batch)
+			batch = batch[:0]
+			return nil
+		}
 		for _, seg := range mt.Segments {
 			rows, err := read(seg.File)
 			if err != nil {
@@ -90,9 +106,39 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 				book = filepath.Base(filepath.Dir(seg.File))
 			}
 			for _, row := range rows[seg.Start : seg.Start+seg.Count] {
+				if skip, ok := gaps[total+len(batch)]; ok {
+					if err := flush(); err != nil {
+						return err
+					}
+					if _, err := tx.Exec(ctx, `SELECT setval($1, nextval($1) + $2 - 1)`, sequenceOf(t.name), skip); err != nil {
+						return err
+					}
+				}
 				out := map[string]json.RawMessage{"created_at": now, "updated_at": now}
 				for k, v := range row {
 					out[k] = v
+				}
+				for c, names := range t.enums {
+					var name string
+					if json.Unmarshal(row[c], &name) == nil {
+						n, ok := names[name]
+						if !ok {
+							return fmt.Errorf("%s: %s %q is not a %s", seg.File, c, name, t.name)
+						}
+						out[c] = marshal(n)
+					}
+				}
+				for _, c := range t.relative {
+					if v := scalar(row[c]); strings.HasPrefix(v, "@today") {
+						days := 0
+						if rest := strings.TrimPrefix(v, "@today"); rest != "" {
+							if _, err := fmt.Sscanf(rest, "%d", &days); err != nil {
+								return fmt.Errorf("%s: bad relative date %q", seg.File, v)
+							}
+						}
+						// Date.today: the loading machine's local day.
+						out[c] = marshal(time.Now().AddDate(0, 0, days).Format("2006-01-02"))
+					}
 				}
 				for _, r := range t.refs {
 					v, ok := row[r.field]
@@ -120,19 +166,20 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 				}
 				batch = append(batch, out)
 				if len(batch) == insertBatch {
-					if err := insert(ctx, tx, t.name, cols, batch); err != nil {
+					if err := flush(); err != nil {
 						return err
 					}
-					total += len(batch)
-					batch = batch[:0]
 				}
 			}
 		}
-		if len(batch) > 0 {
-			if err := insert(ctx, tx, t.name, cols, batch); err != nil {
+		if err := flush(); err != nil {
+			return err
+		}
+
+		if mt.Sequence > 0 {
+			if _, err := tx.Exec(ctx, `SELECT setval($1, $2)`, sequenceOf(t.name), mt.Sequence); err != nil {
 				return err
 			}
-			total += len(batch)
 		}
 		if len(t.keys) > 0 {
 			if ids[t.name], err = naturalKeys(ctx, tx, t); err != nil {

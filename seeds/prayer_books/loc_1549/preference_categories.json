@@ -1,0 +1,4 @@
+[
+{"description": "Personalize as orações e elementos do Ofício Diário", "icon": "auto_stories", "key": "daily_office", "name": "Ofício Diário", "position": 1, "prayer_book": "loc_1549"},
+{"description": "Configure as Matinas como preferir", "icon": "wb_sunny", "key": "morning_prayer", "name": "Matinas", "position": 2, "prayer_book": "loc_1549"}
+]

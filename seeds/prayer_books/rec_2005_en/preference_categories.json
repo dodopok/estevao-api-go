@@ -1,0 +1,5 @@
+[
+{"description": "Options expressly provided by the REC 2005 BCP and its 2011 Modern Language supplement", "icon": "menu_book", "key": "daily_office", "name": "Daily Office", "position": 1, "prayer_book": "rec_2005_en"},
+{"description": "Choices provided in the REC Morning Prayer order", "icon": "wb_sunny", "key": "morning_prayer", "name": "Morning Prayer", "position": 2, "prayer_book": "rec_2005_en"},
+{"description": "Choices provided in the REC Evening Prayer order", "icon": "dark_mode", "key": "evening_prayer", "name": "Evening Prayer", "position": 3, "prayer_book": "rec_2005_en"}
+]

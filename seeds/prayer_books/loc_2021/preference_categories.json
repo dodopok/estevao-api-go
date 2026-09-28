@@ -1,0 +1,5 @@
+[
+{"description": "Customize as orações e elementos do ofício diário", "icon": "auto_stories", "key": "daily_office", "name": "Ofício Diário", "position": 1, "prayer_book": "loc_2021"},
+{"description": "Configure o ofício da manhã como preferir", "icon": "wb_sunny", "key": "morning_prayer", "name": "Oração da Manhã", "position": 2, "prayer_book": "loc_2021"},
+{"description": "Configure o ofício da tarde como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer", "name": "Oração da Tarde", "position": 3, "prayer_book": "loc_2021"}
+]

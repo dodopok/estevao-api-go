@@ -1,0 +1,5 @@
+[
+{"description": "Configure a Oração da Manhã de acordo com as suas preferências", "icon": "wb_sunny", "key": "morning_prayer", "name": "Oração da Manhã", "position": 1, "prayer_book": "loc_1991_pt"},
+{"description": "Configure a Oração da Tarde de acordo com as suas preferências", "icon": "wb_twilight", "key": "evening_prayer", "name": "Oração da Tarde", "position": 2, "prayer_book": "loc_1991_pt"},
+{"description": "Configure a Oração da Noite (Completas) de acordo com as suas preferências", "icon": "bedtime", "key": "compline", "name": "Oração da Noite", "position": 3, "prayer_book": "loc_1991_pt"}
+]

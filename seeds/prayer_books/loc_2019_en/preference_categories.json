@@ -1,0 +1,8 @@
+[
+{"description": "Customize the prayers and elements of the Daily Office", "icon": "auto_stories", "key": "daily_office", "name": "Daily Office", "position": 1, "prayer_book": "loc_2019_en"},
+{"description": "Configure Morning Prayer as you prefer", "icon": "wb_sunny", "key": "morning_prayer", "name": "Morning Prayer", "position": 2, "prayer_book": "loc_2019_en"},
+{"description": "Configure Midday Prayer as you prefer", "icon": "sunny", "key": "midday_prayer", "name": "Midday Prayer", "position": 3, "prayer_book": "loc_2019_en"},
+{"description": "Configure Evening Prayer as you prefer", "icon": "dark_mode", "key": "evening_prayer", "name": "Evening Prayer", "position": 4, "prayer_book": "loc_2019_en"},
+{"description": "Configure Compline as you prefer", "icon": "bedtime", "key": "compline", "name": "Compline", "position": 5, "prayer_book": "loc_2019_en"},
+{"description": "Configure Family Prayer readings and preferences", "icon": "family_restroom", "key": "family_prayer", "name": "Family Prayer", "position": 6, "prayer_book": "loc_2019_en"}
+]

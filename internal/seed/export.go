@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -23,6 +24,19 @@ type Manifest struct {
 type ManifestTable struct {
 	Name     string    `json:"name"`
 	Segments []Segment `json:"segments"`
+	// Gaps are ids the seeds consumed without keeping a row (rows created
+	// and deleted while seeding): before the row at Row (in the table's
+	// insertion order), Skip ids are skipped, so the loaded ids are the
+	// seeded ones.
+	Gaps []Gap `json:"gaps,omitempty"`
+	// Sequence is the id sequence's last value after seeding.
+	Sequence int64 `json:"sequence"`
+}
+
+// Gap is a run of skipped ids.
+type Gap struct {
+	Row  int   `json:"row"`
+	Skip int64 `json:"skip"`
 }
 
 // Segment is a run of consecutive rows from one file.
@@ -113,13 +127,18 @@ func Export(ctx context.Context, pool *pgxpool.Pool, dir string) error {
 			return err
 		}
 		index := keyIndex{}
-		mt := ManifestTable{Name: t.name}
-		for _, raw := range raws {
+		mt := ManifestTable{Name: t.name, Segments: []Segment{}}
+		expected := int64(1)
+		for rowNumber, raw := range raws {
 			var row map[string]json.RawMessage
 			if err := json.Unmarshal([]byte(raw), &row); err != nil {
 				return err
 			}
 			id, _ := idOf(row["id"])
+			if id > expected {
+				mt.Gaps = append(mt.Gaps, Gap{Row: rowNumber, Skip: id - expected})
+			}
+			expected = id + 1
 			natural := func(r *ref, fkID int64) ([]string, error) {
 				key, ok := indexes[r.table][fkID]
 				if !ok {
@@ -169,6 +188,14 @@ func Export(ctx context.Context, pool *pgxpool.Pool, dir string) error {
 				}
 				r := refFor(t, c)
 				if r == nil {
+					if names, ok := t.enums[c]; ok {
+						write(c, enumName(names, row[c]))
+						continue
+					}
+					if containsString(t.relative, c) {
+						write(c, relativeDate(row[c], row["created_at"]))
+						continue
+					}
 					write(c, compact(row[c]))
 					continue
 				}
@@ -213,6 +240,14 @@ func Export(ctx context.Context, pool *pgxpool.Pool, dir string) error {
 			} else {
 				mt.Segments = append(mt.Segments, Segment{File: file, Start: n, Count: 1})
 			}
+		}
+		var last int64
+		var called bool
+		if err := pool.QueryRow(ctx, `SELECT last_value, is_called FROM `+sequenceOf(t.name)).Scan(&last, &called); err != nil {
+			return err
+		}
+		if called {
+			mt.Sequence = last
 		}
 		indexes[t.name] = index
 		manifest.Tables = append(manifest.Tables, mt)
@@ -263,4 +298,47 @@ func marshal(v any) []byte {
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
 	return bytes.TrimRight(b.Bytes(), "\n")
+}
+
+// sequenceOf names a table's id sequence (Rails' <table>_id_seq).
+func sequenceOf(table string) string { return table + "_id_seq" }
+
+func containsString(list []string, s string) bool {
+	for _, v := range list {
+		if v == s {
+			return true
+		}
+	}
+	return false
+}
+
+// relativeDate writes a date as its distance from the day the row was
+// created ("@today", "@today-2").
+func relativeDate(value, createdAt json.RawMessage) []byte {
+	d, err1 := time.Parse("2006-01-02", scalar(value))
+	c, err2 := time.Parse("2006-01-02", scalar(createdAt)[:min(10, len(scalar(createdAt)))])
+	if err1 != nil || err2 != nil {
+		return compact(value)
+	}
+	days := int(d.Sub(c).Hours() / 24)
+	switch {
+	case days == 0:
+		return marshal("@today")
+	case days > 0:
+		return marshal(fmt.Sprintf("@today+%d", days))
+	}
+	return marshal(fmt.Sprintf("@today%d", days))
+}
+
+// enumName writes an enum column by name (the raw value if unmapped).
+func enumName(names map[string]int, raw json.RawMessage) []byte {
+	var n int
+	if json.Unmarshal(raw, &n) == nil {
+		for name, v := range names {
+			if v == n {
+				return marshal(name)
+			}
+		}
+	}
+	return compact(raw)
 }

@@ -1,0 +1,9 @@
+[
+{"description": "Customize as orações e elementos do ofício diário", "icon": "auto_stories", "key": "daily_office", "name": "Ofício Diário", "position": 1, "prayer_book": "loc_2015"},
+{"description": "Configurações específicas para o Ofício Familiar", "icon": "family_restroom", "key": "family_rite", "name": "Ofício Individual e Familiar", "position": 2, "prayer_book": "loc_2015"},
+{"description": "Configure as leituras bíblicas diárias", "icon": "book", "key": "lectionary", "name": "Lecionário", "position": 3, "prayer_book": "loc_2015"},
+{"description": "Configure o ofício da manhã como preferir", "icon": "wb_sunny", "key": "morning_prayer", "name": "Oração da Manhã", "position": 4, "prayer_book": "loc_2015"},
+{"description": "Configure o ofício do meio-dia como preferir", "icon": "wb_sunny_outlined", "key": "midday_prayer", "name": "Oração do Meio-Dia", "position": 5, "prayer_book": "loc_2015"},
+{"description": "Configure o ofício da tarde como preferir", "icon": "wb_sunny_outlined", "key": "evening_prayer", "name": "Oração da Tarde", "position": 6, "prayer_book": "loc_2015"},
+{"description": "Configure o ofício das completas como preferir", "icon": "wb_sunny_outlined", "key": "compline_prayer", "name": "Oração da Noite", "position": 7, "prayer_book": "loc_2015"}
+]
