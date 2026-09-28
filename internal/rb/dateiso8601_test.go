@@ -1,6 +1,9 @@
 package rb
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 // Expectations from Ruby's Date.iso8601 (inputs that do not depend on today).
 func TestDateISO8601(t *testing.T) {
@@ -22,6 +25,32 @@ func TestDateISO8601(t *testing.T) {
 		}
 		if got != want {
 			t.Errorf("DateISO8601(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+}
+
+// Expectations from ActiveSupport's String#in_time_zone (Time.zone
+// America/Sao_Paulo), as UTC.
+func TestZoneParse(t *testing.T) {
+	loc, _ := time.LoadLocation("America/Sao_Paulo")
+	now := time.Date(2026, 9, 28, 12, 0, 0, 0, time.UTC)
+	cases := map[string]string{
+		"2026-12-31":                             "2026-12-31T03:00:00Z",
+		"2026-12-31T10:00:00Z":                   "2026-12-31T10:00:00Z",
+		"2026-12-31 10:00 EST":                   "2026-12-31T15:00:00Z",
+		"2026-12-31 10:00 +0530":                 "2026-12-31T04:30:00Z",
+		"2026-12-31 10:00 Eastern Standard Time": "2026-12-31T15:00:00Z",
+		"2026-02-30":                             "2026-03-02T03:00:00Z",
+		"2026":                                   "",
+		"2026-13-01":                             "", "abc": "", "": "", "2026-12-31 25:00": "",
+	}
+	for in, want := range cases {
+		got := ""
+		if v, ok := ZoneParse(in, loc, now); ok {
+			got = v.UTC().Format(time.RFC3339)
+		}
+		if got != want {
+			t.Errorf("ZoneParse(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

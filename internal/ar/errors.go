@@ -2,6 +2,7 @@ package ar
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -103,6 +104,21 @@ func (e *Errors) Entries() []Entry {
 	out := make([]Entry, len(e.list))
 	for i, en := range e.list {
 		out[i] = Entry{en.attr, en.msg}
+	}
+	return out
+}
+
+// FullMessages ports errors.full_messages: the humanized attribute (nested
+// "assoc.attr" names humanize as "Assoc attr") and the message; :base
+// messages stand alone.
+func (e *Errors) FullMessages() []string {
+	out := []string{}
+	for _, en := range e.Entries() {
+		if en.Attr == "base" {
+			out = append(out, en.Msg)
+			continue
+		}
+		out = append(out, rb.Humanize(strings.ReplaceAll(en.Attr, ".", "_"))+" "+en.Msg)
 	}
 	return out
 }

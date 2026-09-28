@@ -79,13 +79,16 @@ var alwaysVolatile = []string{"request_id", "trace_id"}
 var uuidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
 
 // volatileInValues are fragments of values that change with the clock:
-// the signing time and signature of a presigned storage URL.
+// the signing time and signature of a presigned storage URL, and the
+// row timestamps (text format, with microseconds) a PostgreSQL error
+// DETAIL ("Failing row contains (...)") reports.
 var volatileInValues = []struct {
 	re   *regexp.Regexp
 	repl string
 }{
 	{regexp.MustCompile(`X-Amz-Date=[0-9]{8}T[0-9]{6}Z`), "X-Amz-Date=<volatile>"},
 	{regexp.MustCompile(`X-Amz-Signature=[0-9a-f]{64}`), "X-Amz-Signature=<volatile>"},
+	{regexp.MustCompile(`[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{1,6}`), "<pg-timestamp>"},
 }
 
 // Normalize replaces volatile JSON values with a placeholder.

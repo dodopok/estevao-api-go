@@ -137,9 +137,28 @@ func (r *Record) Assign(c string, v any) {
 		}
 	case Boolean:
 		r.Attrs[c] = CastBool(v)
+	case Datetime:
+		r.Attrs[c] = CastDatetime(v)
 	default:
 		r.Attrs[c] = v
 	}
+}
+
+// CastDatetime ports the time-zone-aware datetime cast of user input: a
+// String is parsed by Time.zone.parse (nil when it has no date parts or is
+// out of range), a Time is kept at microsecond precision.
+func CastDatetime(v any) any {
+	switch x := v.(type) {
+	case time.Time:
+		return x.Truncate(time.Microsecond)
+	case string:
+		t, ok := rb.ZoneParse(x, rb.AppZone, time.Now())
+		if !ok {
+			return nil
+		}
+		return t.Truncate(time.Microsecond)
+	}
+	return nil
 }
 
 // rawValue is the value the numericality validator reads.

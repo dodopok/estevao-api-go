@@ -6,20 +6,33 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// pgClasses maps SQLSTATE codes to the pg gem's exception class and the
-// ActiveRecord class that wraps it.
-var pgClasses = map[string][2]string{
-	"2201W": {"PG::InvalidRowCountInLimitClause", "ActiveRecord::StatementInvalid"},
-	"2201X": {"PG::InvalidRowCountInResultOffsetClause", "ActiveRecord::StatementInvalid"},
-	"22P02": {"PG::InvalidTextRepresentation", "ActiveRecord::StatementInvalid"},
-	"22003": {"PG::NumericValueOutOfRange", "ActiveRecord::RangeError"},
-	"22001": {"PG::StringDataRightTruncation", "ActiveRecord::ValueTooLong"},
-	"22007": {"PG::InvalidDatetimeFormat", "ActiveRecord::StatementInvalid"},
-	"22008": {"PG::DatetimeFieldOverflow", "ActiveRecord::StatementInvalid"},
-	"23502": {"PG::NotNullViolation", "ActiveRecord::NotNullViolation"},
-	"23503": {"PG::ForeignKeyViolation", "ActiveRecord::InvalidForeignKey"},
-	"23505": {"PG::UniqueViolation", "ActiveRecord::RecordNotUnique"},
-	"23514": {"PG::CheckViolation", "ActiveRecord::StatementInvalid"},
+// activeRecordClasses are the SQLSTATEs ActiveRecord's PostgreSQL adapter
+// translates to their own exception classes (translate_exception); every
+// other server error is ActiveRecord::StatementInvalid.
+var activeRecordClasses = map[string]string{
+	"22003": "ActiveRecord::RangeError",
+	"22001": "ActiveRecord::ValueTooLong",
+	"23502": "ActiveRecord::NotNullViolation",
+	"23503": "ActiveRecord::InvalidForeignKey",
+	"23505": "ActiveRecord::RecordNotUnique",
+	"40001": "ActiveRecord::SerializationFailure",
+	"40P01": "ActiveRecord::Deadlocked",
+	"55P03": "ActiveRecord::LockWaitTimeout",
+	"57014": "ActiveRecord::QueryCanceled",
+}
+
+// pgClass ports the pg gem's lookup_error_class: the SQLSTATE, else its
+// two-character class, else PG::ServerError.
+func pgClass(code string) string {
+	if c, ok := pgErrorClasses[code]; ok {
+		return c
+	}
+	if len(code) >= 2 {
+		if c, ok := pgErrorClasses[code[:2]]; ok {
+			return c
+		}
+	}
+	return "PG::ServerError"
 }
 
 // RubyError renders a PostgreSQL error the way ActiveRecord reports it:
@@ -30,13 +43,13 @@ func RubyError(err error) (class, message string, ok bool) {
 	if !errors.As(err, &pg) {
 		return "", "", false
 	}
-	names, known := pgClasses[pg.Code]
+	arClass, known := activeRecordClasses[pg.Code]
 	if !known {
-		names = [2]string{"PG::Error", "ActiveRecord::StatementInvalid"}
+		arClass = "ActiveRecord::StatementInvalid"
 	}
-	msg := names[0] + ": " + pg.Severity + ":  " + pg.Message + "\n"
+	msg := pgClass(pg.Code) + ": " + pg.Severity + ":  " + pg.Message + "\n"
 	if pg.Detail != "" {
 		msg += "DETAIL:  " + pg.Detail + "\n"
 	}
-	return names[1], msg, true
+	return arClass, msg, true
 }
