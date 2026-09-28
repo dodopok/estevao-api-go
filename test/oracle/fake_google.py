@@ -21,6 +21,12 @@ bearer "strapi-internal-test") publishes as documentId "doc-<prayer id>"
 unless the prayer name or document id is one of the STRAPI-* / doc-* switches.
 GET /__strapi lists the requests; DELETE clears.
 
+Stripe (under /stripe/v1, bearer "sk_test_fake"): customers, checkout
+sessions and billing portal sessions answer from the request (customer
+"cus_fail500" fails with 500, price "price_bad" with 400, "cus_nourl" gets
+no URL); GET subscriptions/<id> answers from STRIPE_SUBSCRIPTIONS. GET
+/__stripe lists the requests (sorted, volatile values masked); DELETE clears.
+
 FCM (POST /v1/projects/<project>/messages:send, bearer "fake-admin-token")
 answers per registration token from FCM below (200 otherwise). GET /__fcm
 lists the requests (sorted); DELETE clears.
@@ -29,6 +35,7 @@ import json
 import re
 import sys
 import threading
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 deleted = []
@@ -36,6 +43,7 @@ revenuecat_calls = []
 perplexity_bodies = []
 strapi_requests = []
 fcm_requests = []
+stripe_requests = []
 lock = threading.Lock()
 
 
@@ -111,6 +119,17 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/__fcm":
             with lock:
                 return self.reply(200, sorted(fcm_requests))
+        if self.path == "/__stripe":
+            with lock:
+                return self.reply(200, sorted(stripe_requests))
+        if self.path.startswith("/stripe/v1/subscriptions/"):
+            if self.headers.get("Authorization") != "Bearer sk_test_fake":
+                return self.reply(401, {"error": {"message": "Invalid API Key provided"}})
+            sid = urllib.parse.unquote(self.path[len("/stripe/v1/subscriptions/"):])
+            with lock:
+                stripe_requests.append("GET " + self.path + " " + str(self.headers.get("Stripe-Version")))
+            status, body = STRIPE_SUBSCRIPTIONS.get(sid, (404, {"error": {"message": "No such subscription: '%s'" % sid}}))
+            return self.reply(status, body)
         if self.path == "/__strapi":
             # Sorted: the calls come from background jobs, whose relative order
             # is not part of the contract (Solid Queue workers run them
@@ -151,6 +170,10 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 fcm_requests.clear()
             return self.reply(200, {})
+        if self.path == "/__stripe":
+            with lock:
+                stripe_requests.clear()
+            return self.reply(200, {})
         self.reply(404, {})
 
     def do_POST(self):
@@ -183,6 +206,18 @@ class Handler(BaseHTTPRequestHandler):
             if b"assertion=" not in data:
                 return self.reply(400, {"error": "invalid_grant"})
             return self.reply(200, {"access_token": "fake-admin-token", "expires_in": 3600, "token_type": "Bearer"})
+        if self.path.startswith("/stripe/v1/"):
+            if self.headers.get("Authorization") != "Bearer sk_test_fake":
+                return self.reply(401, {"error": {"message": "Invalid API Key provided"}})
+            form = dict(urllib.parse.parse_qsl(data.decode(), keep_blank_values=True))
+            recorded = re.sub(r"expires_at=\d+", "expires_at=<ts>", data.decode())
+            idem = self.headers.get("Idempotency-Key") or ""
+            if re.match(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", idem):
+                idem = "<uuid>"
+            with lock:
+                stripe_requests.append("POST " + self.path + " " + idem + " " + str(self.headers.get("Stripe-Version")) + " " + recorded)
+            status, body = stripe_reply(self.path[len("/stripe/v1/"):], form)
+            return self.reply(status, body)
         if self.path.endswith("/messages:send"):
             with lock:
                 fcm_requests.append(self.path + " " + str(self.headers.get("Authorization")) + " " + data.decode())
@@ -203,6 +238,47 @@ class Handler(BaseHTTPRequestHandler):
                 deleted.append(uid)
             return self.reply(200, {"kind": "identitytoolkit#DeleteAccountResponse"})
         self.reply(404, {})
+
+
+def stripe_subscription(sid, customer, status, price, plan_code=None, interval="month", currency="brl", **extra):
+    sub = {"id": sid, "object": "subscription", "customer": customer, "status": status,
+           "cancel_at_period_end": extra.get("cancel_at_period_end", False), "trial_end": extra.get("trial_end"),
+           "canceled_at": extra.get("canceled_at"), "metadata": {"plan_code": plan_code} if plan_code else {},
+           "items": {"data": [{"current_period_end": 1893456000,
+                               "price": {"id": price, "currency": currency, "recurring": {"interval": interval}}}]}}
+    return 200, sub
+
+
+STRIPE_SUBSCRIPTIONS = {
+    "sub_new_parish": stripe_subscription("sub_new_parish", "cus_990005", "active", "price_parish_month_brl"),
+    "sub_trial": stripe_subscription("sub_trial", "cus_990005", "trialing", "price_parish_month_brl", trial_end=1790000000),
+    "sub_parish": stripe_subscription("sub_parish", "cus_parish", "canceled", "price_parish_month_brl",
+                                      cancel_at_period_end=True, canceled_at=1790000000),
+    "sub_meta_only": stripe_subscription("sub_meta_only", "cus_lapsed", "active", "price_unknown", plan_code="diocese",
+                                         interval="year", currency="usd"),
+    "sub_unresolvable": stripe_subscription("sub_unresolvable", "cus_lapsed", "active", "price_unknown", plan_code="nope"),
+    "sub_500": (500, {"error": {"message": "Stripe is down"}}),
+}
+
+
+def stripe_reply(path, form):
+    """(status, body) for a POST to the fake Stripe API."""
+    customer = form.get("customer", "")
+    if path == "customers":
+        return 200, {"id": "cus_" + form.get("metadata[developer_id]", "x"), "object": "customer"}
+    if path == "checkout/sessions":
+        if customer == "cus_fail500":
+            return 500, {"error": {"message": "Stripe is down"}}
+        if form.get("line_items[0][price]") == "price_bad":
+            return 400, {"error": {"message": "No such price: 'price_bad'"}}
+        if customer == "cus_nourl":
+            return 200, {"id": "cs_nourl"}
+        return 200, {"id": "cs_" + customer, "url": "https://checkout.stripe.test/" + customer, "expires_at": 1893456000}
+    if path == "billing_portal/sessions":
+        if customer == "cus_nourl":
+            return 200, {"id": "bps_nourl"}
+        return 200, {"id": "bps_" + customer, "url": "https://billing.stripe.test/" + customer + "?l=" + form.get("locale", "")}
+    return 404, {"error": {"message": "Unrecognized request URL"}}
 
 
 def fcm_error(code, message, status, unregistered=False):

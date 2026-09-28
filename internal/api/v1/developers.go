@@ -11,11 +11,13 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dodopok/estevao-api-go/internal/ar"
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/billing"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/developers"
 	"github.com/dodopok/estevao-api-go/internal/integrations"
@@ -332,3 +334,98 @@ func DeveloperPlaygroundProxy(c *web.Context) {
 }
 
 var _ = errors.New
+
+// DeveloperBillingShow ports Developers::BillingController#show.
+func DeveloperBillingShow(c *web.Context) {
+	d := developers.Authenticate(c)
+	e := developers.EntitlementFor(c.Ctx, d)
+	sub := developers.SubscriptionOf(c.Ctx, d.ID)
+	var subscription any
+	if sub != nil {
+		subscription = rb.M("plan_code", sub.PlanCode, "status", sub.Status, "interval", sub.Interval, "currency", sub.Currency,
+			"cancel_at_period_end", sub.CancelAtPeriodEnd, "trial_ends_at", timeAttr(timeOrNilPtr(sub.TrialEndsAt)),
+			"current_period_end", timeAttr(timeOrNilPtr(sub.CurrentPeriodEnd)), "canceled_at", timeAttr(timeOrNilPtr(sub.CanceledAt)))
+	}
+	c.JSON(200, rb.M("entitlement", e.AsJSON(), "legacy_free", d.Get("legacy_free"),
+		"trial_available", sub == nil && d.Get("legacy_free") != true, "trial_period_days", billing.TrialPeriodDays(),
+		"can_create_key", developers.CanCreateKey(c.Ctx, d), "max_keys", d.Get("max_keys"),
+		"keys_count", developers.KeysCount(c.Ctx, d), "support_email", billing.SupportEmail(), "subscription", subscription))
+}
+
+func timeOrNilPtr(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return *t
+}
+
+// DeveloperBillingCheckout ports #checkout.
+func DeveloperBillingCheckout(c *web.Context) {
+	d := developers.Authenticate(c)
+	result, err := developers.StartCheckout(c.Ctx, d, c.Param("plan_code"), c.Param("interval"), c.Param("currency"), c.Param("locale"))
+	var unavailable developers.UnavailablePlan
+	var pending developers.CheckoutPending
+	switch {
+	case err == nil:
+		c.JSON(200, rb.M("url", result.URL, "plan_code", result.PlanCode, "trial_period_days", result.TrialPeriodDays,
+			"reused", result.Reused))
+	case errors.As(err, new(developers.AlreadySubscribed)):
+		c.JSON(422, rb.M("error", "Change plans in the billing portal", "code", "ALREADY_SUBSCRIBED"))
+	case errors.As(err, &unavailable):
+		c.JSON(422, rb.M("error", unavailable.Message, "code", "PLAN_UNAVAILABLE"))
+	case errors.As(err, &pending):
+		s := pending.Session
+		var url any
+		if s.URL != nil {
+			url = *s.URL
+		}
+		c.JSON(409, rb.M("error", pending.Error(), "code", "CHECKOUT_PENDING", "url", url, "plan_code", s.PlanCode,
+			"interval", s.Interval, "currency", s.Currency, "expires_at", rb.FormatTime(s.ExpiresAt)))
+	default:
+		panic(err)
+	}
+}
+
+// DeveloperBillingPortal ports #portal.
+func DeveloperBillingPortal(c *web.Context) {
+	d := developers.Authenticate(c)
+	url, err := developers.OpenPortal(c.Ctx, d, c.Param("locale"))
+	if errors.As(err, new(developers.NoCustomer)) {
+		c.JSON(422, rb.M("error", "No subscription to manage yet", "code", "NO_STRIPE_CUSTOMER"))
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+	c.JSON(200, rb.M("url", url))
+}
+
+// WebhooksStripeCreate ports Webhooks::StripeController#create.
+func WebhooksStripeCreate(c *web.Context) {
+	payload := c.RawBody()
+	if msg := developers.VerifySignature(payload, c.HeaderValue("Stripe-Signature")); msg != "" {
+		c.JSON(400, rb.M("error", "Invalid signature"))
+		return
+	}
+	parsed, err := rb.ParseJSON(payload)
+	if err != nil {
+		c.JSON(400, rb.M("error", "Invalid payload"))
+		return
+	}
+	var event *rb.Map
+	switch x := parsed.(type) {
+	case *rb.Map:
+		event = x
+	case nil, string:
+		// nil becomes {}; String#[]("type") is nil or "type", neither a
+		// handled event.
+		event = rb.NewMap()
+	default:
+		panic(&web.StandardError{Class: "TypeError", Message: "no implicit conversion of String into Integer"})
+	}
+	status, err := developers.ProcessWebhookEvent(c.Ctx, event)
+	if err != nil {
+		panic(err)
+	}
+	c.JSON(200, rb.M("received", true, "status", status))
+}

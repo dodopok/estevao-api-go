@@ -75,3 +75,19 @@ unless ORACLE_HTTP_REWRITES.empty?
     end
   end)
 end
+
+# Stripe: Billing::StripeClient connects to STRIPE_API_URL (plain HTTP for the
+# fake) instead of api.stripe.com over TLS; the requests are unchanged.
+if (fake_stripe = ENV["STRIPE_API_URL"].presence)
+  Billing::StripeClient.prepend(Module.new do
+    define_method(:uri_for) { |path| URI.parse("#{fake_stripe}/#{path}") }
+    define_method(:perform) do |http_request|
+      uri = http_request.uri
+      Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https", open_timeout: 5, read_timeout: 15) do |http|
+        http.request(http_request)
+      end
+    rescue Timeout::Error, IOError, SystemCallError, OpenSSL::SSL::SSLError => e
+      raise Billing::StripeClient::Error.new("Stripe request failed: #{e.class}", uncertain: true)
+    end
+  end)
+end
