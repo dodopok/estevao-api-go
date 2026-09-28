@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/db"
@@ -97,55 +97,64 @@ func RecordAPIKeyUsage(c *web.Context, controllerName string) {
 	rediscache.Increment(c.Ctx, key, 1, 48*time.Hour)
 }
 
+// multiplierCacheKey holds the active keys' multipliers, shared by every
+// instance through Redis as Rails shares ApiKey's through Rails.cache.
+const multiplierCacheKey = "api_key/rate_limit_multipliers/v1"
+
 // RateLimitMultiplierFor ports ApiKey.rate_limit_multiplier_for, with the
 // same 5-minute cache of active keys.
 func RateLimitMultiplierFor(ctx context.Context, value string) int {
 	if strings.TrimSpace(value) == "" {
 		return 1
 	}
-	mult.mu.Lock()
-	defer mult.mu.Unlock()
-	if time.Since(mult.loaded) > 5*time.Minute || mult.byHash == nil {
+	failed := false
+	raw := rediscache.FetchJSON(ctx, multiplierCacheKey, 5*time.Minute, func() []byte {
 		rows, err := db.Q().Query(ctx, `SELECT key, rate_limit_multiplier, expires_at FROM api_keys
 			WHERE active = TRUE AND billing_active = TRUE AND (expires_at IS NULL OR expires_at > $1)`, time.Now().UTC())
 		if err != nil {
-			return 1
+			failed = true
+			return nil
 		}
+		defer rows.Close()
 		m := map[string]multEntry{}
 		for rows.Next() {
 			var key string
 			var e multEntry
-			if err := rows.Scan(&key, &e.multiplier, &e.expiresAt); err == nil {
+			if err := rows.Scan(&key, &e.Multiplier, &e.ExpiresAt); err == nil {
 				sum := sha256.Sum256([]byte(key))
 				m[hex.EncodeToString(sum[:])] = e
 			}
 		}
-		rows.Close()
-		mult.byHash = m
-		mult.loaded = time.Now()
-	}
-	sum := sha256.Sum256([]byte(value))
-	e, ok := mult.byHash[hex.EncodeToString(sum[:])]
-	if !ok || e.multiplier == 0 || (e.expiresAt != nil && !e.expiresAt.After(time.Now())) {
+		b, _ := json.Marshal(m)
+		return b
+	})
+	if failed {
+		rediscache.DeleteJSON(ctx, multiplierCacheKey)
 		return 1
 	}
-	return e.multiplier
+	var byHash map[string]multEntry
+	if json.Unmarshal(raw, &byHash) != nil {
+		return 1
+	}
+	sum := sha256.Sum256([]byte(value))
+	e, ok := byHash[hex.EncodeToString(sum[:])]
+	if !ok || e.Multiplier == 0 || (e.ExpiresAt != nil && !e.ExpiresAt.After(time.Now())) {
+		return 1
+	}
+	return e.Multiplier
 }
 
-// ClearRateLimitMultiplierCache ports clear_rate_limit_multiplier_cache!.
+// ClearRateLimitMultiplierCache ports ApiKey#invalidate_caches (after every
+// api_keys commit): the multiplier cache of both stacks and the Rails
+// authentication cache of the keys, which would otherwise let the Rails
+// stack keep accepting a revoked key until the entry expires.
 func ClearRateLimitMultiplierCache() {
-	mult.mu.Lock()
-	mult.byHash = nil
-	mult.mu.Unlock()
+	ctx := context.Background()
+	rediscache.DeleteJSON(ctx, multiplierCacheKey)
+	rediscache.DeleteRails(ctx, "v8/api_keys/rate_limit_multipliers", "v8/api_keys/authentication/v2/*")
 }
 
 type multEntry struct {
-	multiplier int
-	expiresAt  *time.Time
-}
-
-var mult struct {
-	mu     sync.Mutex
-	loaded time.Time
-	byHash map[string]multEntry
+	Multiplier int        `json:"m"`
+	ExpiresAt  *time.Time `json:"e"`
 }

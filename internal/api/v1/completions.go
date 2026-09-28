@@ -3,12 +3,14 @@ package v1
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
+	"github.com/dodopok/estevao-api-go/internal/rediscache"
 	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/users"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -196,6 +198,7 @@ func CompletionsCreate(c *web.Context) {
 	err := db.Q().QueryRow(c.Ctx, `INSERT INTO completions (user_id, date_reference, office_type, duration_seconds, prayer_book_id, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING id`, u.ID, dateRef, *officeStr, duration, currentPrayerBookID(c.Ctx, u), now).Scan(&id)
 	pgMust(err)
+	clearCompletionCache(c.Ctx, u.ID, dateRef, *officeStr)
 	if err := updateStreak(c.Ctx, u); err != nil {
 		var ri *users.RecordInvalid
 		if errors.As(err, &ri) {
@@ -283,8 +286,11 @@ func CompletionsDestroy(c *web.Context) {
 	u := auth.CurrentUser(c)
 	id, ok := findID(c.Param("id"))
 	var found int64
+	var dateRef time.Time
+	var officeType string
 	if ok {
-		err := db.Q().QueryRow(c.Ctx, `DELETE FROM completions WHERE user_id = $1 AND id = $2 RETURNING id`, u.ID, id).Scan(&found)
+		err := db.Q().QueryRow(c.Ctx, `DELETE FROM completions WHERE user_id = $1 AND id = $2 RETURNING id, date_reference, office_type`,
+			u.ID, id).Scan(&found, &dateRef, &officeType)
 		if err != nil && !db.NoRows(err) {
 			panic(err)
 		}
@@ -293,6 +299,7 @@ func CompletionsDestroy(c *web.Context) {
 		c.JSON(404, rb.M("error", "Completion not found"))
 		return
 	}
+	clearCompletionCache(c.Ctx, u.ID, dateRef.Format("2006-01-02"), officeType)
 	if err := updateStreak(c.Ctx, u); err != nil {
 		var ri *users.RecordInvalid
 		if errors.As(err, &ri) {
@@ -304,6 +311,13 @@ func CompletionsDestroy(c *web.Context) {
 	must(err)
 	c.JSON(200, rb.M("message", "Completion removed successfully",
 		"current_streak", intOrNil(fresh.CurrentStreak), "longest_streak", intOrNil(fresh.LongestStreak)))
+}
+
+// clearCompletionCache ports clear_completion_cache: the Rails stack caches
+// the completion status of a user's office, unversioned, so a completion
+// written here must evict it.
+func clearCompletionCache(ctx context.Context, userID int64, date, officeType string) {
+	rediscache.DeleteRails(ctx, "v8/user_data/completion_status/"+strconv.FormatInt(userID, 10)+"/"+date+"/"+officeType)
 }
 
 // findID ports the id cast of `find(params[:id])`: ActiveModel's integer

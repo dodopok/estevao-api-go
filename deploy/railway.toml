@@ -1,0 +1,14 @@
+# Web service (Go). Same shared variables as the Rails web service
+# (DATABASE_URL, REDIS_URL, secrets). The schema stays owned by the Rails
+# migrations: this service never runs DDL, so there is no db:prepare here.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "estevao-api"
+healthcheckPath = "/up"
+healthcheckTimeout = 180
+# rails cache:warm_calendar: warms before the release takes traffic, never fails.
+preDeployCommand = "estevao-worker -warm-calendar"
+restartPolicyType = "ON_FAILURE"

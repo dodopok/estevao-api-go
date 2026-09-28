@@ -1,0 +1,11 @@
+# Worker service (Go): Solid Queue worker, dispatcher and the recurring
+# schedule of config/recurring.yml, on the same tables as bin/jobs. Run it
+# INSTEAD of the Rails worker (both can overlap safely during a switch: jobs
+# are claimed with SKIP LOCKED and recurring runs are unique per run_at).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "estevao-worker"
+restartPolicyType = "ON_FAILURE"

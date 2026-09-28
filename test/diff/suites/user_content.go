@@ -83,7 +83,9 @@ func init() {
 				jsonReq("PATCH", "/api/v1/journals/abc", plain, `{"journal":{"content":"x"}}`),
 				getV("/api/v1/journals/2026/3/2", plain),
 				get("/api/v1/journals/2026/3", plain),
-				getV("/api/v1/journals/2026/9", plain),
+				// entries grouped from rows read without ORDER BY: heap order,
+				// which changes between runs in Rails too (docs/EQUIVALENCE.md D2)
+				func() diff.Request { r := getV("/api/v1/journals/2026/9", plain); r.AnyKeyOrder = true; return r }(),
 				get("/api/v1/journals/2026/2/30", plain),
 				get("/api/v1/journals/2026/13", plain),
 				get("/api/v1/journals/1800/1", plain),

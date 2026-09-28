@@ -132,6 +132,24 @@ type CelebrationResolver struct {
 	movableDates   []Date
 	transferable   []*Celebration
 	corpusObserved *bool
+	occupied       *occupiedIndex
+}
+
+// occupiedIndex precomputes occupied_dates_for: the dates every celebration
+// sees, and per celebration the fixed dates it alone occupies (which it does
+// not see, unless a movable celebration also falls there).
+type occupiedIndex struct {
+	shared  []Date
+	movable map[Date]bool
+	sole    map[int64][]Date
+	// invalid are fixed keys with no date this year; asking for them raises
+	// unless the celebration asking is their only one.
+	invalid []invalidKey
+}
+
+type invalidKey struct {
+	owner int64 // the single celebration id at the key, or -1
+	first *Celebration
 }
 
 type actualDate struct {
@@ -362,28 +380,65 @@ func (r *CelebrationResolver) transferIfNeeded(c *Celebration, original Date) Da
 	return transferIfNeeded(r.year, r.easter, r.rules, c, original, r.corpusChristiObserved(), r.occupiedDatesFor(c))
 }
 
+// occupiedDatesFor ports occupied_dates_for(celebration): every fixed date
+// not occupied by the celebration alone, then every movable date. Callers
+// only test membership, so the result is built once per resolver.
 func (r *CelebrationResolver) occupiedDatesFor(c *Celebration) []Date {
+	if r.occupied == nil {
+		r.occupied = r.buildOccupied()
+	}
+	idx := r.occupied
+	for _, k := range idx.invalid {
+		if k.owner != c.ID {
+			panic(invalidDatePanic{k.first})
+		}
+	}
+	sole := idx.sole[c.ID]
+	if len(sole) == 0 {
+		return idx.shared
+	}
+	skip := map[Date]bool{}
+	for _, d := range sole {
+		if !idx.movable[d] {
+			skip[d] = true
+		}
+	}
+	out := make([]Date, 0, len(idx.shared))
+	for _, d := range idx.shared {
+		if !skip[d] {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+func (r *CelebrationResolver) buildOccupied() *occupiedIndex {
+	idx := &occupiedIndex{movable: map[Date]bool{}, sole: map[int64][]Date{}}
 	var dates []Date
 	for _, k := range r.fixedKeysOrder {
 		cs := r.fixedByDate[k]
-		all := true
+		owner := cs[0].ID
 		for _, x := range cs {
-			if x.ID != c.ID {
-				all = false
+			if x.ID != owner {
+				owner = -1
 				break
 			}
 		}
-		if all {
+		d, ok := civil.New(r.year, k.m, k.d)
+		if !ok {
+			idx.invalid = append(idx.invalid, invalidKey{owner: owner, first: cs[0]})
 			continue
 		}
-		if d, ok := civil.New(r.year, k.m, k.d); ok {
-			dates = append(dates, d)
-		} else {
-			panic(invalidDatePanic{cs[0]})
+		dates = append(dates, d)
+		if owner != -1 {
+			idx.sole[owner] = append(idx.sole[owner], d)
 		}
 	}
-	dates = append(dates, r.movableDates...)
-	return uniqDates(dates)
+	for _, d := range r.movableDates {
+		idx.movable[d] = true
+	}
+	idx.shared = uniqDates(append(dates, r.movableDates...))
+	return idx
 }
 
 func (r *CelebrationResolver) explicitlyDisplaced(c *Celebration, date Date) bool {

@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
@@ -155,7 +156,7 @@ func Middleware() web.Middleware {
 			period := int64(t.period)
 			expires := period - (now % period) + 1
 			key := "rack::attack:" + strconv.FormatInt(now/period, 10) + ":" + t.name + ":" + d
-			count, ok := rediscache.Increment(context.Background(), key, 1, time.Duration(expires)*time.Second)
+			count, ok := increment(key, time.Duration(expires)*time.Second)
 			if !ok {
 				count = 1
 			}
@@ -255,4 +256,48 @@ func ClientIP(r *http.Request) string {
 		return remote[0]
 	}
 	return ""
+}
+
+// increment ports Rack::Attack.cache.store: the shared Rails cache (Redis)
+// in production unless RACK_ATTACK_CACHE=memory, a process-local
+// MemoryStore otherwise.
+func increment(key string, ttl time.Duration) (int64, bool) {
+	if config.RailsEnv() == "production" && config.Get("RACK_ATTACK_CACHE") != "memory" {
+		return rediscache.Increment(context.Background(), key, 1, ttl)
+	}
+	return memoryCounters.increment(key, ttl), true
+}
+
+type memoryEntry struct {
+	count   int64
+	expires time.Time
+}
+
+type memoryStore struct {
+	mu      sync.Mutex
+	entries map[string]*memoryEntry
+	sweep   time.Time
+}
+
+var memoryCounters = &memoryStore{entries: map[string]*memoryEntry{}}
+
+func (m *memoryStore) increment(key string, ttl time.Duration) int64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	now := time.Now()
+	if now.Sub(m.sweep) > time.Minute {
+		for k, e := range m.entries {
+			if now.After(e.expires) {
+				delete(m.entries, k)
+			}
+		}
+		m.sweep = now
+	}
+	e, ok := m.entries[key]
+	if !ok || now.After(e.expires) {
+		e = &memoryEntry{expires: now.Add(ttl)}
+		m.entries[key] = e
+	}
+	e.count++
+	return e.count
 }

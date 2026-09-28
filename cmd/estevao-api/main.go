@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -50,6 +51,14 @@ func main() {
 		}()
 	} else {
 		close(jobsDone)
+	}
+	// PPROF_ADDR (e.g. 127.0.0.1:6060) exposes the Go profiler on its own
+	// listener; unset, nothing is served.
+	if addr := config.Get("PPROF_ADDR"); addr != "" {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		go func() { _ = http.ListenAndServe(addr, mux) }()
 	}
 	go func() {
 		logger.Info("listening", "addr", srv.Addr)
