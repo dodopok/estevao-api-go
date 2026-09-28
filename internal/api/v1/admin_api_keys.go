@@ -239,7 +239,12 @@ func usageDate(v any) *civil.Date {
 // AdminAPIKeysUsage ports #usage.
 func AdminAPIKeysUsage(c *web.Context) {
 	auth.AuthenticateAdmin(c)
-	k := setAPIKey(c)
+	renderAPIKeyUsage(c, setAPIKey(c))
+}
+
+// renderAPIKeyUsage ports the usage action shared by the admin and the
+// developer API key controllers.
+func renderAPIKeyUsage(c *web.Context, k *ar.Record) {
 	today := civil.FromTime(time.Now().In(rb.AppZone))
 	start := civil.FromTime(time.Now().In(rb.AppZone).Add(-30 * 24 * time.Hour))
 	end := today

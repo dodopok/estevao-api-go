@@ -338,6 +338,9 @@ func (s *Server) run(c *Context, ep Endpoint) {
 			if !ep.Application {
 				panic(e)
 			}
+			if !definesCurrentUser(c.Controller) {
+				panic(exceptionStatus(500))
+			}
 			if s.ReportError != nil {
 				s.ReportError(c, e, nil)
 			}
@@ -350,6 +353,12 @@ func (s *Server) run(c *Context, ep Endpoint) {
 		stack := debug.Stack()
 		if s.ReportError != nil {
 			s.ReportError(c, rec, stack)
+		}
+		if !definesCurrentUser(c.Controller) {
+			if s.Logger != nil {
+				s.Logger.Error("[ERROR]", "error", fmt.Sprint(rec), "endpoint", c.Endpoint, "request_id", c.RequestID, "stack", string(stack))
+			}
+			panic(exceptionStatus(500))
 		}
 		if s.Logger != nil {
 			s.Logger.Error("[ERROR]", "error", fmt.Sprint(rec), "endpoint", c.Endpoint, "request_id", c.RequestID, "stack", string(stack))
@@ -421,3 +430,16 @@ func (c *Context) varyAccept() bool {
 }
 
 var browserLikeAccepts = regexp.MustCompile(`,\s*\*/\*|\*/\*\s*,`)
+
+// noCurrentUser are the controllers that include neither Authenticatable
+// nor a current_user of their own. NewRelicErrorTracking's handlers
+// (handle_standard_error, and report_error_to_newrelic in
+// handle_infrastructure_error) read current_user, so in these controllers
+// the handler itself raises NameError and the exception reaches the public
+// exceptions app: a bare 500.
+var noCurrentUser = map[string]bool{
+	"api/v1/developers": true, "api/v1/developers/api_keys": true, "api/v1/developers/billing": true,
+	"api/v1/plans": true, "api/v1/preferences": true, "api/v1/webhooks/stripe": true, "home": true, "health": true,
+}
+
+func definesCurrentUser(controller string) bool { return !noCurrentUser[controller] }

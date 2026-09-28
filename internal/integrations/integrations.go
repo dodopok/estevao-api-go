@@ -34,8 +34,13 @@ func TimeoutSeconds(envKey string, def int) int {
 }
 
 // Client is an http.Client with the connect/read/write timeout of envKey.
+// Like Net::HTTP and http.rb, it does not follow redirects: a 3xx is
+// returned as it is.
 func Client(envKey string, def int) *http.Client {
-	return &http.Client{Timeout: time.Duration(TimeoutSeconds(envKey, def)) * time.Second}
+	return &http.Client{
+		Timeout:       time.Duration(TimeoutSeconds(envKey, def)) * time.Second,
+		CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+	}
 }
 
 // rubyInteger is Kernel#Integer on a String: optional surrounding

@@ -100,3 +100,15 @@ func envOr(k, d string) string {
 	}
 	return d
 }
+
+// DeveloperTokenFor mints a developer-portal token (the separate Firebase
+// project) with the given claims.
+func DeveloperTokenFor(claims map[string]any) string {
+	_, file, _, _ := runtime.Caller(0)
+	key := filepath.Join(filepath.Dir(file), "..", "..", "oracle", "test_firebase_key.pem")
+	t, err := diff.Token(key, envOr("DEVELOPER_FIREBASE_PROJECT_ID", "estevao-dev-test"), claims)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
