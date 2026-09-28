@@ -281,6 +281,12 @@ func DeveloperPlaygroundProxy(c *web.Context) {
 	if v, ok := os.LookupEnv("APP_HOST"); ok {
 		base = v
 	}
+	// Test-only: lets a side-by-side run point each stack's playground at
+	// itself while APP_HOST (which also builds audio and avatar URLs) stays
+	// the same for both. Unset in every deployed environment.
+	if v, ok := os.LookupEnv("PLAYGROUND_PROXY_BASE_URL"); ok {
+		base = v
+	}
 	raw := c.Param("endpoint")
 	endpoint, ok := raw.(string)
 	if !ok {

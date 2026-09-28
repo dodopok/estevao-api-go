@@ -15,6 +15,8 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
+	"github.com/dodopok/estevao-api-go/internal/solidqueue"
+	"github.com/dodopok/estevao-api-go/internal/workers"
 )
 
 func main() {
@@ -35,6 +37,20 @@ func main() {
 		Handler:           app.NewServer(logger, config.PresenceOr("PUBLIC_DIR", "public")),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
+	// config/puma.rb: `plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]` -
+	// any value, even "false", runs the jobs inside the web process.
+	jobsCtx, stopJobs := context.WithCancel(ctx)
+	jobsDone := make(chan struct{})
+	if _, set := os.LookupEnv("SOLID_QUEUE_IN_PUMA"); set {
+		go func() {
+			defer close(jobsDone)
+			if err := solidqueue.Run(jobsCtx, workers.Options()); err != nil {
+				logger.Error("solid_queue", "error", err)
+			}
+		}()
+	} else {
+		close(jobsDone)
+	}
 	go func() {
 		logger.Info("listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -48,4 +64,6 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)
+	stopJobs()
+	<-jobsDone
 }

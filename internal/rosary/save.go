@@ -3,6 +3,7 @@ package rosary
 import (
 	"context"
 	"github.com/dodopok/estevao-api-go/internal/ar"
+	"log/slog"
 	"slices"
 	"time"
 
@@ -205,11 +206,15 @@ func (b *Block) destroy(ctx context.Context, q db.Querier) error {
 // unpublication of a published copy is queued, then the prayer, its blocks
 // and steps are deleted.
 //
-// Rails enqueues before deleting and a worker picks the job up later; the
-// in-process job starts immediately, so it is enqueued once the row is gone
-// (otherwise it would find the prayer still published and skip the call).
+// As in Rails, the unpublication is enqueued before the row is deleted: the
+// job carries the document id and finishes after the source row is gone.
 func (p *Prayer) Destroy(ctx context.Context) error {
-	err := db.Transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
+	if doc := p.Get("strapi_document_id"); !ar.Blank(doc) {
+		if err := EnqueueUnpublish(ctx, p.ID, doc); err != nil {
+			return err
+		}
+	}
+	return db.Transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		for _, b := range p.Blocks {
 			if err := b.destroy(ctx, tx); err != nil {
 				return err
@@ -218,12 +223,6 @@ func (p *Prayer) Destroy(ctx context.Context) error {
 		_, err := tx.Exec(ctx, `DELETE FROM custom_rosary_prayers WHERE id = $1`, p.ID)
 		return err
 	})
-	if err == nil {
-		if doc := p.Get("strapi_document_id"); !ar.Blank(doc) {
-			EnqueueUnpublish(p.ID, doc.(string))
-		}
-	}
-	return err
 }
 
 // afterCommitUpdate ports the after_commit (on: :update) callbacks.
@@ -232,11 +231,18 @@ func (p *Prayer) afterCommitUpdate(ctx context.Context, before map[string]any) {
 	// enqueue_publication_job
 	if p.approved() && p.Get("publication_status") == "pending" &&
 		(savedChange("moderation_decision") || savedChange("reviewed_at") || savedChange("publication_status")) {
-		EnqueuePublish(p.ID)
+		if err := EnqueuePublish(ctx, p.ID); err != nil {
+			must(p.UpdateColumns(ctx, db.Conn(ctx), map[string]any{"publication_retry_at": users.Now()}))
+			slog.Error("[CustomRosaryPrayer] publication enqueue failed", "error", err)
+		}
 	}
 	// enqueue_unpublication_job
 	if p.Get("publication_status") == "unpublishing" && savedChange("publication_status") {
 		must(p.UpdateColumns(ctx, db.Conn(ctx), map[string]any{"publication_started_at": users.Now()}))
-		EnqueueUnpublish(p.ID, p.Str("strapi_document_id"))
+		if err := EnqueueUnpublish(ctx, p.ID, p.Get("strapi_document_id")); err != nil {
+			must(p.UpdateColumns(ctx, db.Conn(ctx), map[string]any{"publication_started_at": nil}))
+			must(p.UpdateColumns(ctx, db.Conn(ctx), map[string]any{"publication_retry_at": users.Now()}))
+			slog.Error("[CustomRosaryPrayer] unpublication enqueue failed", "error", err)
+		}
 	}
 }

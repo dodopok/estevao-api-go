@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/dodopok/estevao-api-go/internal/ar"
+	"log/slog"
 	"sort"
 	"strconv"
 	"time"
@@ -13,8 +14,8 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dodopok/estevao-api-go/internal/db"
-	"github.com/dodopok/estevao-api-go/internal/jobs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
+	"github.com/dodopok/estevao-api-go/internal/solidqueue"
 	"github.com/dodopok/estevao-api-go/internal/users"
 )
 
@@ -389,16 +390,26 @@ func finishPublication(ctx context.Context, id int64, payload *rb.Map, sourceHas
 		return nil
 	})
 	if errors.Is(err, errRecordNotFound) {
-		EnqueueUnpublish(id, rb.ToS(ar.CastString(documentID)))
+		enqueueStaleUnpublication(ctx, id, ar.CastString(documentID))
 		return nil
 	}
 	if err != nil {
 		return err
 	}
 	if cleanup != "" {
-		EnqueueUnpublish(id, cleanup)
+		enqueueStaleUnpublication(ctx, id, cleanup)
 	}
 	return nil
+}
+
+// enqueueStaleUnpublication ports Publish#enqueue_stale_unpublication: a
+// failed enqueue leaves the unpublishing row for the reconciler.
+func enqueueStaleUnpublication(ctx context.Context, id int64, documentID any) {
+	if err := EnqueueUnpublish(ctx, id, documentID); err != nil {
+		_, _ = db.Conn(ctx).Exec(ctx, `UPDATE custom_rosary_prayers SET publication_retry_at = $2
+			WHERE id = $1 AND publication_status = 'unpublishing'`, id, users.Now())
+		slog.Error("[CustomRosaryPrayer] stale publication cleanup enqueue failed", "error", err)
+	}
 }
 
 // --- Unpublish ------------------------------------------------------------------
@@ -467,34 +478,166 @@ func unpublishJob(ctx context.Context, id int64, documentID string) error {
 	must(q.UpdateColumns(ctx, db.Conn(ctx), map[string]any{"publication_status": next, "publication_started_at": nil,
 		"publication_retry_at": nil, "publication_error": nil}))
 	if next == "pending" {
-		EnqueuePublish(id)
+		if err := EnqueuePublish(ctx, id); err != nil {
+			must(q.UpdateColumns(ctx, db.Conn(ctx), map[string]any{"publication_retry_at": users.Now(),
+				"publication_error": truncate(err.Error(), 1000)}))
+		}
 	}
 	return nil
 }
 
 // --- jobs -----------------------------------------------------------------------
 
-func classify(err error) jobs.Outcome {
+const (
+	publishJob    = "CustomRosaryPrayers::PublishJob"
+	unpublishJob_ = "CustomRosaryPrayers::UnpublishJob"
+)
+
+// rubyError names a Go failure with the Ruby class the job declarations
+// (and a failed execution) know it by.
+type rubyError struct {
+	class string
+	err   error
+}
+
+func (e *rubyError) Error() string     { return e.err.Error() }
+func (e *rubyError) Unwrap() error     { return e.err }
+func (e *rubyError) RubyClass() string { return e.class }
+
+// asRuby maps the publication failures of scope ("CustomRosaryPrayers::Publish"
+// or "...::Unpublish") to their classes.
+func asRuby(scope string, err error) error {
 	var invalid *InvalidState
 	var permanent *PermanentFailure
 	var failed *Failed
 	switch {
-	case errors.As(err, &invalid), errors.As(err, &permanent):
-		return jobs.Discard
+	case err == nil:
+		return nil
+	case errors.Is(err, errRecordNotFound):
+		return &rubyError{"ActiveRecord::RecordNotFound", err}
+	case errors.As(err, &invalid):
+		return &rubyError{scope + "::InvalidState", err}
+	case errors.As(err, &permanent):
+		return &rubyError{scope + "::PermanentFailure", err}
 	case errors.As(err, &failed):
-		return jobs.Retry
+		return &rubyError{scope + "::Failed", err}
 	}
-	return jobs.Fail
+	return err
 }
 
-// EnqueuePublish ports CustomRosaryPrayers::PublishJob.perform_later.
-func EnqueuePublish(id int64) {
-	jobs.Enqueue(jobs.Job{Name: "CustomRosaryPrayers::PublishJob", Attempts: 3, Classify: classify,
-		Perform: func(ctx context.Context) error { return publish(ctx, id) }})
+func init() {
+	solidqueue.Register(publishJob, solidqueue.Handler{
+		Queue: "default",
+		Rescue: []solidqueue.Rescue{
+			{Key: "[CustomRosaryPrayers::Publish::PermanentFailure]", Match: solidqueue.Classes("CustomRosaryPrayers::Publish::PermanentFailure")},
+			{Key: "[CustomRosaryPrayers::Publish::Failed]", Match: solidqueue.Classes("CustomRosaryPrayers::Publish::Failed"), Attempts: 3},
+			{Key: "[ActiveJob::DeserializationError]", Match: solidqueue.Classes("ActiveJob::DeserializationError")},
+			{Key: "[CustomRosaryPrayers::Publish::InvalidState]", Match: solidqueue.Classes("CustomRosaryPrayers::Publish::InvalidState")},
+		},
+		Perform: func(ctx context.Context, e *solidqueue.Execution) error {
+			return asRuby("CustomRosaryPrayers::Publish", publish(ctx, int64(rb.ToI(e.Arg(0)))))
+		},
+	})
+	solidqueue.Register(unpublishJob_, solidqueue.Handler{
+		Queue: "default",
+		Rescue: []solidqueue.Rescue{
+			{Key: "[CustomRosaryPrayers::Unpublish::Failed]", Match: solidqueue.Classes("CustomRosaryPrayers::Unpublish::Failed"), Attempts: 3},
+			{Key: "[CustomRosaryPrayers::Unpublish::PermanentFailure]", Match: solidqueue.Classes("CustomRosaryPrayers::Unpublish::PermanentFailure")},
+			{Key: "[ActiveJob::DeserializationError]", Match: solidqueue.Classes("ActiveJob::DeserializationError")},
+		},
+		Perform: func(ctx context.Context, e *solidqueue.Execution) error {
+			return asRuby("CustomRosaryPrayers::Unpublish", unpublishJob(ctx, int64(rb.ToI(e.Arg(0))), rb.ToS(e.Arg(1))))
+		},
+	})
 }
 
-// EnqueueUnpublish ports CustomRosaryPrayers::UnpublishJob.perform_later.
-func EnqueueUnpublish(id int64, documentID string) {
-	jobs.Enqueue(jobs.Job{Name: "CustomRosaryPrayers::UnpublishJob", Attempts: 3, Classify: classify,
-		Perform: func(ctx context.Context) error { return unpublishJob(ctx, id, documentID) }})
+// EnqueuePublish ports CustomRosaryPrayers::PublishJob.perform_later(id).
+func EnqueuePublish(ctx context.Context, id int64) error {
+	_, err := solidqueue.PerformLater(ctx, publishJob, id)
+	return err
+}
+
+// EnqueueUnpublish ports CustomRosaryPrayers::UnpublishJob.perform_later(id,
+// document_id); documentID is nil or a string.
+func EnqueueUnpublish(ctx context.Context, id int64, documentID any) error {
+	_, err := solidqueue.PerformLater(ctx, unpublishJob_, id, documentID)
+	return err
+}
+
+// --- ReconcilePublicationJobsJob ------------------------------------------------
+
+const reconcileBatch = 100
+
+func init() {
+	solidqueue.Register("CustomRosaryPrayers::ReconcilePublicationJobsJob", solidqueue.Handler{Queue: "maintenance", Perform: reconcile})
+}
+
+func idPairs(ctx context.Context, sql string, args ...any) ([][2]any, error) {
+	rows, err := db.Q().Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out [][2]any
+	for rows.Next() {
+		var id int64
+		var doc *string
+		if len(rows.FieldDescriptions()) == 2 {
+			if err := rows.Scan(&id, &doc); err != nil {
+				return nil, err
+			}
+		} else if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		var d any
+		if doc != nil {
+			d = *doc
+		}
+		out = append(out, [2]any{id, d})
+	}
+	return out, rows.Err()
+}
+
+// reconcile ports CustomRosaryPrayers::ReconcilePublicationJobsJob#perform.
+func reconcile(ctx context.Context, _ *solidqueue.Execution) error {
+	now := users.Now()
+	staleBefore := now.Add(-staleAfterPublish)
+	if _, err := db.Q().Exec(ctx, `UPDATE custom_rosary_prayers SET publication_status = 'pending', publication_started_at = NULL,
+		publication_retry_at = $2, publication_error = 'Recovered after a worker interruption'
+		WHERE publication_status = 'publishing' AND publication_started_at IS NOT NULL AND publication_started_at < $1`, staleBefore, now); err != nil {
+		return err
+	}
+	if _, err := db.Q().Exec(ctx, `UPDATE custom_rosary_prayers SET publication_started_at = NULL,
+		publication_retry_at = $2, publication_error = 'Recovered after a worker interruption'
+		WHERE publication_status = 'unpublishing' AND publication_started_at IS NOT NULL AND publication_started_at < $1`, staleBefore, now); err != nil {
+		return err
+	}
+	for _, q := range []string{
+		`SELECT id FROM custom_rosary_prayers WHERE share_status = 'approved' AND publication_status = 'pending'
+			AND (publication_retry_at IS NULL OR publication_retry_at <= $1) AND (publication_attempts < $2) ORDER BY id ASC LIMIT $3`,
+		`SELECT id FROM custom_rosary_prayers WHERE share_status = 'approved' AND publication_status = 'failed'
+			AND (publication_retry_at IS NOT NULL AND publication_retry_at <= $1) AND (publication_attempts < $2) ORDER BY id ASC LIMIT $3`,
+	} {
+		ids, err := idPairs(ctx, q, now, MaxAutomaticPublicationAttempts, reconcileBatch)
+		if err != nil {
+			return err
+		}
+		for _, p := range ids {
+			if err := EnqueuePublish(ctx, p[0].(int64)); err != nil {
+				return err
+			}
+		}
+	}
+	pairs, err := idPairs(ctx, `SELECT id, strapi_document_id FROM custom_rosary_prayers WHERE publication_status = 'unpublishing'
+		AND NOT ((strapi_document_id IS NULL OR strapi_document_id = '')) AND (publication_started_at IS NULL)
+		AND (publication_retry_at IS NOT NULL AND publication_retry_at <= $1) ORDER BY id ASC LIMIT $2`, now, reconcileBatch)
+	if err != nil {
+		return err
+	}
+	for _, p := range pairs {
+		if err := EnqueueUnpublish(ctx, p[0].(int64), p[1]); err != nil {
+			return err
+		}
+	}
+	return nil
 }

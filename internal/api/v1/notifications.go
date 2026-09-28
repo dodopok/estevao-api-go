@@ -89,6 +89,6 @@ func NotificationsBroadcast(c *web.Context) {
 		c.JSON(422, rb.M("error", "title and body are required"))
 		return
 	}
-	notify.EnqueueBroadcast(title, body, data)
+	must(notify.EnqueueBroadcast(c.Ctx, title, body, data))
 	c.JSON(202, rb.M("message", "Broadcast iniciado em background", "total_users", notify.BroadcastUsers(c.Ctx)))
 }

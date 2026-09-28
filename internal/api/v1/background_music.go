@@ -528,7 +528,7 @@ var BackgroundMusicPlayback = withBackgroundMusic(func(m *bgMusic) {
 	if v := c.Param("office_type"); rb.Present(v) {
 		officeType = v
 	}
-	audio.RecordUserUsageLater(m.u.ID, []*rb.Map{rb.M("audio_type", "background_track", "asset_key", strconv.FormatInt(track.ID, 10),
+	audio.RecordUserUsageLater(m.c.Ctx, m.u.ID, []*rb.Map{rb.M("audio_type", "background_track", "asset_key", strconv.FormatInt(track.ID, 10),
 		"background_track_id", track.ID, "prayer_book_code", prefCode, "office_type", officeType)})
 	payload := m.trackPayload(track, m.favoriteIDs([]*bgmusic.Track{track})[track.ID])
 	if !strings.HasPrefix(asset.ObjectKey, "background_music/") || strings.Contains(asset.ObjectKey, "..") {

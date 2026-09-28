@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"time"
 
 	"github.com/dodopok/estevao-api-go/test/diff"
 )
@@ -150,10 +149,32 @@ func resetFakeS3() error {
 
 // settleJobs performs, on the oracle, the jobs it enqueued (it runs no
 // worker); the Go server runs them in-process, so it only needs a moment.
-func settleJobs(classes ...string) func(side diff.Side) error {
+func settleJobs(classes ...string) func(side diff.Side) error { return settle(false, classes) }
+
+// enqueueAndSettle enqueues each class with no arguments (a recurring
+// run) and performs them.
+func enqueueAndSettle(classes ...string) func(side diff.Side) error { return settle(true, classes) }
+
+func settle(enqueue bool, classes []string) func(side diff.Side) error {
 	return func(side diff.Side) error {
-		if side.Name != "rails" {
-			time.Sleep(1500 * time.Millisecond)
+		// DIFF_CROSS_JOBS=1 swaps the performers: the Go worker performs the
+		// jobs Rails enqueued and the Rails runner those Go enqueued, so equal
+		// effects show each stack runs the other's Solid Queue jobs.
+		goPerforms := side.Name != "rails"
+		if os.Getenv("DIFF_CROSS_JOBS") == "1" {
+			goPerforms = !goPerforms
+		}
+		if goPerforms {
+			_, file, _, _ := runtime.Caller(0)
+			worker := filepath.Join(filepath.Dir(file), "..", "..", "oracle", "run-go-worker.sh")
+			flags := []string{"-drain"}
+			if enqueue {
+				flags = append(flags, "-enqueue")
+			}
+			out, err := exec.Command(worker, append(flags, classes...)...).CombinedOutput()
+			if err != nil {
+				return fmt.Errorf("%v: %s", err, out)
+			}
 			return nil
 		}
 		runner := os.Getenv("RAILS_RUNNER")
@@ -161,7 +182,11 @@ func settleJobs(classes ...string) func(side diff.Side) error {
 			return fmt.Errorf("RAILS_RUNNER is required to perform the oracle's jobs")
 		}
 		_, file, _, _ := runtime.Caller(0)
-		script := filepath.Join(filepath.Dir(file), "..", "..", "effects", "perform_jobs.rb")
+		name := "perform_jobs.rb"
+		if enqueue {
+			name = "enqueue_jobs.rb"
+		}
+		script := filepath.Join(filepath.Dir(file), "..", "..", "effects", name)
 		out, err := exec.Command(runner, append([]string{script}, classes...)...).CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("%v: %s", err, out)

@@ -489,7 +489,7 @@ func UsersDestroy(c *web.Context) {
 	blobs, err := users.Destroy(c.Ctx, u.ID)
 	pgMust(err)
 	for _, b := range blobs {
-		activestorage.PurgeLater(b)
+		pgMust(activestorage.PurgeLater(c.Ctx, b))
 	}
 	c.JSON(200, rb.M("message", "Account deleted successfully"))
 }

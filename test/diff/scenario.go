@@ -95,6 +95,23 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		out.Steps = append(out.Steps, r)
 	}
 	if s.Settle != nil {
+		// The jobs each side enqueued, as Solid Queue rows: the class, queue,
+		// execution and ActiveJob payload (ids and clock values aside).
+		rows, err := conn.Query(ctx, enqueuedJobsSQL)
+		if err != nil {
+			return nil, fmt.Errorf("enqueued jobs: %w", err)
+		}
+		var lines []string
+		for rows.Next() {
+			var line string
+			if err := rows.Scan(&line); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			lines = append(lines, line)
+		}
+		rows.Close()
+		out.Snapshots = append(out.Snapshots, lines)
 		if err := s.Settle(side); err != nil {
 			return nil, fmt.Errorf("settle: %w", err)
 		}
@@ -134,6 +151,14 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 	}
 	return out, nil
 }
+
+const enqueuedJobsSQL = `SELECT concat_ws(' | ', j.class_name, j.queue_name, j.priority, j.concurrency_key,
+	CASE WHEN EXISTS (SELECT 1 FROM solid_queue_ready_executions r WHERE r.job_id = j.id AND r.queue_name = j.queue_name AND r.priority = j.priority) THEN 'ready'
+	     WHEN EXISTS (SELECT 1 FROM solid_queue_scheduled_executions x WHERE x.job_id = j.id AND x.queue_name = j.queue_name) THEN 'scheduled'
+	     ELSE 'none' END,
+	regexp_replace(regexp_replace(j.arguments, '"job_id":"[0-9a-f-]{36}"', '"job_id":"<uuid>"'),
+	  '"(enqueued_at|scheduled_at)":"[0-9T:.Z-]+"', '"\1":"<time>"', 'g'))
+	FROM solid_queue_jobs j WHERE j.finished_at IS NULL ORDER BY j.id`
 
 // CompareScenario lists the differences between two runs of s.
 func CompareScenario(s Scenario, a, b *ScenarioResult) []string {

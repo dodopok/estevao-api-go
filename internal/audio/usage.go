@@ -3,11 +3,11 @@ package audio
 import (
 	"context"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
+	"github.com/dodopok/estevao-api-go/internal/solidqueue"
 )
 
 var usageAudioTypes = map[string]bool{"background_track": true, "audio_clip": true, "liturgical_text": true}
@@ -25,7 +25,7 @@ func NormalizeUsages(usages []*rb.Map) []*rb.Map {
 		}
 		n := rb.NewMap()
 		for _, k := range usageAttributes {
-			if v := u.Get(k); v != nil {
+			if v := rb.Deref(u.Get(k)); v != nil {
 				n.Set(k, v)
 			}
 		}
@@ -36,45 +36,38 @@ func NormalizeUsages(usages []*rb.Map) []*rb.Map {
 	return out
 }
 
-type usageJob struct {
-	userID int64
-	usages []*rb.Map
+const recordUsageJob = "Audio::RecordUserUsageJob"
+
+func init() {
+	solidqueue.Register(recordUsageJob, solidqueue.Handler{
+		Queue: "default",
+		Perform: func(ctx context.Context, e *solidqueue.Execution) error {
+			var usages []*rb.Map
+			list, _ := e.Arg(1).([]any)
+			for _, u := range list {
+				if m, ok := u.(*rb.Map); ok {
+					usages = append(usages, m)
+				}
+			}
+			return RecordUserUsage(ctx, int64(rb.ToI(e.Arg(0))), usages, time.Now())
+		},
+	})
 }
 
-var (
-	usageQueue     = make(chan usageJob, 4096)
-	usageQueueOnce sync.Once
-)
-
-// RecordUserUsageLater runs Audio::RecordUserUsageJob#perform off the
-// request, in enqueue order on one worker. Rails persists the job in Solid
-// Queue first; here a crash between the response and the upsert loses the
-// usage rows (see docs/EQUIVALENCE.md).
-func RecordUserUsageLater(userID int64, usages []*rb.Map) {
-	usageQueueOnce.Do(func() { go usageWorker() })
-	select {
-	case usageQueue <- usageJob{userID, usages}:
-	default:
-		go performUsage(usageJob{userID, usages})
+// RecordUserUsageLater ports Audio::UserUsageRecorder.record_later: the
+// normalized usages (symbol-keyed hashes) go to Audio::RecordUserUsageJob;
+// an enqueue failure is only logged.
+func RecordUserUsageLater(ctx context.Context, userID int64, usages []*rb.Map) {
+	usages = NormalizeUsages(usages)
+	if userID == 0 || len(usages) == 0 {
+		return
 	}
-}
-
-func usageWorker() {
-	for job := range usageQueue {
-		performUsage(job)
+	list := make([]any, len(usages))
+	for i, u := range usages {
+		list[i] = solidqueue.SymbolHash(u)
 	}
-}
-
-func performUsage(job usageJob) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			slog.Warn("[Audio::RecordUserUsageJob] failed", "error", rec)
-		}
-	}()
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	if err := RecordUserUsage(ctx, job.userID, job.usages, time.Now()); err != nil {
-		slog.Warn("[Audio::RecordUserUsageJob] failed", "error", err)
+	if _, err := solidqueue.PerformLater(ctx, recordUsageJob, userID, list); err != nil {
+		slog.Warn("[Audio::UserUsageRecorder] enqueue failed", "error", err)
 	}
 }
 

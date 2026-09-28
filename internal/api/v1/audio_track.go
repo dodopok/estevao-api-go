@@ -57,13 +57,13 @@ func recordAudioClipUsage(c *web.Context, r *resolver, user *users.User, provide
 	RecordAudioUsage(c.Ctx, user.ID, usages)
 }
 
-// RecordAudioUsage ports Audio::UserUsageRecorder.record_later. Rails enqueues
-// Audio::RecordUserUsageJob; this runs the same upsert off the request, and
-// like the enqueue it never fails the request.
-func RecordAudioUsage(_ context.Context, userID int64, usages []*rb.Map) {
+// RecordAudioUsage ports Audio::UserUsageRecorder.record_later: the usages
+// go to Audio::RecordUserUsageJob, and a failed enqueue never fails the
+// request.
+func RecordAudioUsage(ctx context.Context, userID int64, usages []*rb.Map) {
 	normalized := audio.NormalizeUsages(usages)
 	if userID == 0 || len(normalized) == 0 {
 		return
 	}
-	audio.RecordUserUsageLater(userID, normalized)
+	audio.RecordUserUsageLater(ctx, userID, normalized)
 }

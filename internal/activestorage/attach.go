@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
-	"log/slog"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/s3"
+	"github.com/dodopok/estevao-api-go/internal/solidqueue"
 )
 
 // Upload is the attachable (an uploaded file).
@@ -160,9 +160,13 @@ func Attach(ctx context.Context, recordType, table string, recordID int64, name 
 		return nil, err
 	}
 	for _, id := range replaced {
-		enqueue(func(ctx context.Context) error { return PurgeBlob(ctx, id) })
+		if err := PurgeLater(ctx, id); err != nil {
+			return nil, err
+		}
 	}
-	enqueue(func(ctx context.Context) error { return Analyze(ctx, b.ID) })
+	if err := AnalyzeLater(ctx, b.ID); err != nil {
+		return nil, err
+	}
 	if err := upload(ctx, b, up.Data); err != nil {
 		return nil, err
 	}
@@ -244,24 +248,61 @@ func PurgeBlob(ctx context.Context, id int64) error {
 	return nil
 }
 
-// enqueue runs a job off the request (see docs/EQUIVALENCE.md: the Go
-// service has no durable queue for these Active Storage jobs).
-func enqueue(job func(ctx context.Context) error) {
-	go func() {
-		defer func() {
-			if rec := recover(); rec != nil {
-				slog.Warn("active storage job failed", "error", rec)
-			}
-		}()
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-		defer cancel()
-		if err := job(ctx); err != nil {
-			slog.Warn("active storage job failed", "error", err)
-		}
-	}()
+// PurgeLater ports blob.purge_later (ActiveStorage::PurgeJob), off the request.
+func PurgeLater(ctx context.Context, id int64) error {
+	_, err := solidqueue.PerformLater(ctx, purgeJob, solidqueue.RecordGID("ActiveStorage::Blob", id))
+	return err
 }
 
-// PurgeLater ports blob.purge_later (ActiveStorage::PurgeJob), off the request.
-func PurgeLater(id int64) {
-	enqueue(func(ctx context.Context) error { return PurgeBlob(ctx, id) })
+// AnalyzeLater ports blob.analyze_later (ActiveStorage::AnalyzeJob).
+func AnalyzeLater(ctx context.Context, id int64) error {
+	_, err := solidqueue.PerformLater(ctx, analyzeJob, solidqueue.RecordGID("ActiveStorage::Blob", id))
+	return err
+}
+
+const (
+	purgeJob   = "ActiveStorage::PurgeJob"
+	analyzeJob = "ActiveStorage::AnalyzeJob"
+)
+
+// blobArg locates the job's blob; a missing one is the RecordNotFound both
+// jobs discard.
+func blobArg(ctx context.Context, e *solidqueue.Execution) (int64, error) {
+	g, _ := e.Arg(0).(solidqueue.GlobalID)
+	id, ok := g.Locate("ActiveStorage::Blob")
+	if ok {
+		var exists bool
+		if err := db.Q().QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM active_storage_blobs WHERE id = $1)`, id).Scan(&exists); err != nil {
+			return 0, err
+		}
+		ok = exists
+	}
+	if !ok {
+		return 0, &solidqueue.Error{Class: "ActiveRecord::RecordNotFound", Message: "Couldn't find ActiveStorage::Blob"}
+	}
+	return id, nil
+}
+
+func init() {
+	notFound := solidqueue.Rescue{Key: "[ActiveRecord::RecordNotFound]", Match: solidqueue.Classes("ActiveRecord::RecordNotFound")}
+	solidqueue.Register(analyzeJob, solidqueue.Handler{Queue: "default",
+		Rescue: []solidqueue.Rescue{notFound,
+			{Key: "[ActiveStorage::IntegrityError]", Match: solidqueue.Classes("ActiveStorage::IntegrityError"), Attempts: 10}},
+		Perform: func(ctx context.Context, e *solidqueue.Execution) error {
+			id, err := blobArg(ctx, e)
+			if err != nil {
+				return err
+			}
+			return Analyze(ctx, id)
+		}})
+	solidqueue.Register(purgeJob, solidqueue.Handler{Queue: "default",
+		Rescue: []solidqueue.Rescue{notFound,
+			{Key: "[ActiveRecord::Deadlocked]", Match: solidqueue.Classes("ActiveRecord::Deadlocked"), Attempts: 10}},
+		Perform: func(ctx context.Context, e *solidqueue.Execution) error {
+			id, err := blobArg(ctx, e)
+			if err != nil {
+				return err
+			}
+			return PurgeBlob(ctx, id)
+		}})
 }
