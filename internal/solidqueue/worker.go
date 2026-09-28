@@ -835,3 +835,36 @@ func Drain(ctx context.Context, classes []string) (int, error) {
 	}
 	return count, nil
 }
+
+// PerformNow ports Job.perform_now: the job performed in this process with
+// no queue row. args are serialized ActiveJob arguments (as in Job), which
+// are round-tripped as a worker would read them. retry_on/discard_on do not
+// apply: the error is returned.
+func PerformNow(ctx context.Context, class string, args ...any) error {
+	registryMu.RLock()
+	h, known := registry[class]
+	registryMu.RUnlock()
+	if !known {
+		return &Error{Class: "NameError", Message: "uninitialized constant " + class}
+	}
+	serial := append([]any{}, args...)
+	return func() (err error) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				err = panicError(rec)
+			}
+		}()
+		roundTrip, err := rb.ParseJSON(rb.JSON(serial))
+		if err != nil {
+			return err
+		}
+		serialArgs, _ := roundTrip.([]any)
+		deserialized, err := Deserialize(serialArgs)
+		if err != nil {
+			return err
+		}
+		arguments, _ := deserialized.([]any)
+		return h.Perform(ctx, &Execution{Class: class, Arguments: arguments, Executions: 1, serialArgs: serialArgs,
+			exceptionEx: rb.NewMap()})
+	}()
+}
