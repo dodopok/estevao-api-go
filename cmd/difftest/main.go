@@ -93,8 +93,8 @@ func main() {
 				fmt.Printf("ERROR %s %s: rails=%v go=%v\n", req.Method, req.Path, err1, err2)
 				continue
 			}
-			diff.Normalize(a, req.Volatile)
-			diff.Normalize(b, req.Volatile)
+			diff.NormalizeRequest(a, req)
+			diff.NormalizeRequest(b, req)
 			if d := diff.Compare(a, b); len(d) > 0 {
 				failed++
 				sf++

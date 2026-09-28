@@ -7,6 +7,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/activestorage"
 	"github.com/dodopok/estevao-api-go/internal/api/v1"
+	"github.com/dodopok/estevao-api-go/internal/api/v2"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/ratelimit"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -32,6 +33,9 @@ func Endpoints() map[string]web.Endpoint {
 		e[k] = web.Endpoint{Handler: v, Live: live}
 	}
 	for k, v := range v1.Endpoints() {
+		e[k] = app(v)
+	}
+	for k, v := range v2.Endpoints() {
 		e[k] = app(v)
 	}
 	return e

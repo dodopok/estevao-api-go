@@ -20,7 +20,7 @@ func (InvalidAudioVoice) Error() string { return "Invalid preferred_audio_voice"
 
 func invalidPrayerBook(code any) {
 	panic(&web.DomainError{Class: "InvalidPreference", Code: "INVALID_PRAYER_BOOK", Message: "Invalid prayer_book_code",
-		Context: map[string]any{"prayer_book_code": code}})
+		Context: rb.M("prayer_book_code", code)})
 }
 
 // UpdatePreferences ports Users::UpdatePreferences.call. attributes is the

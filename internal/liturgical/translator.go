@@ -168,6 +168,14 @@ func TranslatedLanguage(language string) bool {
 	return ok && p.translated
 }
 
+// InTranslatedLanguages ports TRANSLATED_LANGUAGES.include?(language): the
+// language exactly as given, without the regional fallback
+// TranslatedLanguage applies.
+func InTranslatedLanguages(language string) bool {
+	p, ok := profilesTr[language]
+	return ok && p.translated
+}
+
 // TranslateSeason returns the season name in language (identity for pt).
 func TranslateSeason(seasonPT, language string) string {
 	if p, ok := profileFor(language); ok && p.seasons != nil {

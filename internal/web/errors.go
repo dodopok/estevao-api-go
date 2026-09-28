@@ -11,7 +11,7 @@ type DomainError struct {
 	Class   string // e.g. "InvalidDate"
 	Code    string
 	Message string
-	Context map[string]any
+	Context *rb.Map
 }
 
 func (e *DomainError) Error() string { return e.Message }

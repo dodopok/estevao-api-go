@@ -40,6 +40,10 @@ type Context struct {
 
 	// Values carries per-request state set by filters (current user, key...).
 	Values map[string]any
+
+	// RenderError overrides how rescue_from renders a DomainError or an
+	// InfrastructureError (a controller's own render_error).
+	RenderError func(c *Context, class, code, message string, context *rb.Map, status int)
 }
 
 // Halt stops the filter chain after a filter rendered (like a before_action

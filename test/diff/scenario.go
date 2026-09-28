@@ -91,7 +91,7 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		if err != nil {
 			return nil, err
 		}
-		Normalize(r, req.Volatile)
+		NormalizeRequest(r, req)
 		out.Steps = append(out.Steps, r)
 	}
 	if s.Settle != nil {

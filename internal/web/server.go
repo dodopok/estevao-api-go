@@ -293,6 +293,12 @@ func (s *Server) dispatch(r *http.Request, reqID string, m *Match, ep Endpoint) 
 		c.Header.Set("X-Request-Id", reqID)
 	}
 	s.run(c, ep)
+	// ActionDispatch::Response#handle_conditional_get!: a response that
+	// already carries a validator defaults to must-revalidate (Rack::ETag
+	// would otherwise say no-cache).
+	if !ep.Live && c.Header.Get("Cache-Control") == "" && (c.Header.Get("Etag") != "" || c.Header.Get("Last-Modified") != "") {
+		c.Header.Set("Cache-Control", "max-age=0, private, must-revalidate")
+	}
 	if !c.written {
 		c.Status = 204
 		c.Body = nil
@@ -332,6 +338,10 @@ func (s *Server) run(c *Context, ep Endpoint) {
 			if !ep.Application {
 				panic(e)
 			}
+			if c.RenderError != nil {
+				c.RenderError(c, e.Class, e.Code, e.Message, e.Context, e.Status())
+				return
+			}
 			c.JSON(e.Status(), rb.M("error", e.Message, "code", e.Code, "request_id", c.RequestID))
 			return
 		case *InfraError:
@@ -343,6 +353,10 @@ func (s *Server) run(c *Context, ep Endpoint) {
 			}
 			if s.ReportError != nil {
 				s.ReportError(c, e, nil)
+			}
+			if c.RenderError != nil {
+				c.RenderError(c, e.Class, e.Code, e.Message, nil, e.Status())
+				return
 			}
 			c.JSON(e.Status(), rb.M("error", e.Message, "code", e.Code, "request_id", c.RequestID))
 			return
@@ -440,6 +454,9 @@ var browserLikeAccepts = regexp.MustCompile(`,\s*\*/\*|\*/\*\s*,`)
 var noCurrentUser = map[string]bool{
 	"api/v1/developers": true, "api/v1/developers/api_keys": true, "api/v1/developers/billing": true,
 	"api/v1/plans": true, "api/v1/preferences": true, "api/v1/webhooks/stripe": true, "home": true, "health": true,
+	"api/v2/days": true, "api/v2/readings": true, "api/v2/liturgical_explanations": true, "api/v2/collects": true,
+	"api/v2/passages": true, "api/v2/prayer_books": true, "api/v2/bible_versions": true, "api/v2/celebrations": true,
+	"api/v2/years": true,
 }
 
 func definesCurrentUser(controller string) bool { return !noCurrentUser[controller] }

@@ -117,7 +117,7 @@ func Inspect(v any) string {
 	case nil:
 		return "nil"
 	case string:
-		return strconv.Quote(x)
+		return InspectString(x)
 	case []any:
 		parts := make([]string, len(x))
 		for i, e := range x {
@@ -126,7 +126,7 @@ func Inspect(v any) string {
 		return "[" + strings.Join(parts, ", ") + "]"
 	case *Map:
 		parts := []string{}
-		x.Each(func(k string, e any) { parts = append(parts, strconv.Quote(k)+"=>"+Inspect(e)) })
+		x.Each(func(k string, e any) { parts = append(parts, InspectString(k)+"=>"+Inspect(e)) })
 		return "{" + strings.Join(parts, ", ") + "}"
 	}
 	return ToS(v)

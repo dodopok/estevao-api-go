@@ -2,6 +2,9 @@ package prefs
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"sort"
 
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -9,10 +12,50 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
 
-// Resolved ports Preferences::Resolved (values only; sources and cache keys
-// are internal to Rails' caching and not part of any response).
+// Resolved ports Preferences::Resolved (values and cache keys; sources are
+// not part of any response).
 type Resolved struct {
-	Values *rb.Map
+	Values    *rb.Map
+	CacheKeys []string
+}
+
+var cacheSystemKeys = []string{
+	"prayer_book_code", "language", "bible_version", "preferred_audio_voice", "seed",
+	"reading_type", "confession_type", "creed_type", "lords_prayer_version", "family_rite",
+	"lectionary_variant", "psalm_translation", "psalm_cycle", "morning_psalm_cycle",
+	"evening_psalm_cycle", "morning_prayer_psalm_cycle", "evening_prayer_psalm_cycle",
+	"weekday_psalm_table", "ascension_readings", "daily_office_rite",
+}
+
+var cacheExcludedKeys = map[string]bool{
+	"user_id": true, "provider_uid": true, "api_key": true, "token": true,
+	"notifications": true, "notifications_enabled": true,
+	"streak_reminder_enabled": true, "streak_display_enabled": true, "prayer_times": true,
+	"mode": true,
+}
+
+// CacheKey ports Resolved#cache_key: the SHA-256 of the sorted, compacted
+// projection of the values that shape shared liturgical content.
+func (r *Resolved) CacheKey() string {
+	included := map[string]bool{}
+	for _, k := range append(append([]string{}, r.CacheKeys...), cacheSystemKeys...) {
+		if !cacheExcludedKeys[k] {
+			included[k] = true
+		}
+	}
+	var keys []string
+	r.Values.Each(func(k string, v any) {
+		if included[k] && v != nil {
+			keys = append(keys, k)
+		}
+	})
+	sort.Strings(keys)
+	projection := rb.NewMap()
+	for _, k := range keys {
+		projection.Set(k, r.Values.Get(k))
+	}
+	sum := sha256.Sum256(rb.ToJSON(projection))
+	return hex.EncodeToString(sum[:])
 }
 
 func (r *Resolved) Get(key string) any       { return r.Values.Get(key) }
@@ -33,7 +76,9 @@ func newResolved(values *rb.Map) *Resolved {
 
 // Merge ports Resolved#merge.
 func (r *Resolved) Merge(other *rb.Map) *Resolved {
-	return newResolved(r.Values.Merge(other))
+	res := newResolved(r.Values.Merge(other))
+	res.CacheKeys = r.CacheKeys
+	return res
 }
 
 // DefaultValues ports Preferences::Resolver#default_values.
@@ -99,7 +144,9 @@ func Resolve(ctx context.Context, pb *store.PrayerBook, stored, overrides *rb.Ma
 	}
 	values.Set("reading_type", caps.NormalizeReadingType(values.Get("reading_type")))
 	normalized := defs.Normalize(values, true, false)
-	return newResolved(normalized), nil
+	res := newResolved(normalized)
+	res.CacheKeys = defs.Keys()
+	return res, nil
 }
 
 func scoped(defs *DefinitionSet, values *rb.Map) *rb.Map {

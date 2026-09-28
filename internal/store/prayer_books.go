@@ -186,3 +186,24 @@ func PrayerBookByID(ctx context.Context, id int64) (*PrayerBook, error) {
 	}
 	return pbs[0], nil
 }
+
+// CelebrationWithTransferRules ports Celebration.find_by(id:, prayer_book_id:)
+// with its transfer_rules column (raw JSON, nil when NULL).
+func CelebrationWithTransferRules(ctx context.Context, id, prayerBookID int64) (*liturgical.Celebration, []byte, error) {
+	var rules []byte
+	row := db.Q().QueryRow(ctx, `SELECT `+celebrationColumns+`, transfer_rules::text FROM celebrations
+		WHERE id = $1 AND prayer_book_id = $2 LIMIT 1`, id, prayerBookID)
+	c, err := ScanCelebration(scanTail{row, &rules})
+	if db.NoRows(err) {
+		return nil, nil, nil
+	}
+	return c, rules, err
+}
+
+// scanTail appends destinations after ScanCelebration's own.
+type scanTail struct {
+	row  interface{ Scan(...any) error }
+	tail *[]byte
+}
+
+func (s scanTail) Scan(dest ...any) error { return s.row.Scan(append(dest, s.tail)...) }

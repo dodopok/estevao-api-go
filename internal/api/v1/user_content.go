@@ -199,53 +199,14 @@ func PreferencesShow(c *web.Context) {
 	if !c.Stale(cacheKey("preferences", "etag", pb.Code, "pb_"+timestampVersion(&updated))) {
 		return
 	}
-	rows, err := db.Q().Query(c.Ctx, `SELECT id, key, name, description, icon, position FROM preference_categories
-		WHERE prayer_book_id = $1 ORDER BY position ASC, position ASC`, pb.ID)
+	list, total, last, err := prefs.CategoriesForAPI(c.Ctx, pb)
 	must(err)
-	type category struct {
-		id                int64
-		key, name         string
-		description, icon *string
-		position          int
-	}
-	var cats []category
-	for rows.Next() {
-		var ct category
-		must(rows.Scan(&ct.id, &ct.key, &ct.name, &ct.description, &ct.icon, &ct.position))
-		cats = append(cats, ct)
-	}
-	rows.Close()
-	ids := make([]int64, len(cats))
-	for i, ct := range cats {
-		ids[i] = ct.id
-	}
-	defs, err := prefs.ForCategories(c.Ctx, ids)
-	must(err)
-	list := []any{}
-	total := 0
-	var last *time.Time
-	for _, ct := range cats {
-		items := []any{}
-		for _, d := range defs {
-			if d.PreferenceCategoryID != ct.id {
-				continue
-			}
-			items = append(items, d.AsJSONForAPI())
-			total++
-			if last == nil || d.UpdatedAt.After(*last) {
-				t := d.UpdatedAt
-				last = &t
-			}
-		}
-		list = append(list, rb.M("id", ct.key, "key", ct.key, "name", ct.name, "description", rb.Deref(ct.description),
-			"icon", rb.Deref(ct.icon), "order", ct.position, "preferences", items))
-	}
 	var lastUpdated any
 	if last != nil {
 		lastUpdated = iso8601(*last)
 	}
 	c.JSON(200, rb.M("prayer_book_id", pb.Code, "prayer_book_name", rb.Deref(pb.Name), "categories", list,
-		"metadata", rb.M("total_categories", len(cats), "total_preferences", total, "last_updated", lastUpdated, "version", "1.0")))
+		"metadata", rb.M("total_categories", len(list), "total_preferences", total, "last_updated", lastUpdated, "version", "1.0")))
 }
 
 // --- FavoritesController --------------------------------------------------

@@ -33,6 +33,10 @@ type Request struct {
 	// Volatile lists extra JSON keys whose values are expected to differ
 	// between runs (e.g. created_at of a record created by this request).
 	Volatile []string
+	// KeyedETag marks responses whose ETag is derived from a cache key
+	// rather than from the body (stale?(etag:)), so it is compared even when
+	// a volatile body value was normalized.
+	KeyedETag bool
 }
 
 // Result is a normalized response.
@@ -41,6 +45,8 @@ type Result struct {
 	Header  http.Header
 	Body    []byte
 	Changed bool // normalization replaced something in the body
+	// KeyedETag: see Request.KeyedETag.
+	KeyedETag bool
 }
 
 var client = &http.Client{Timeout: 120 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
@@ -93,6 +99,16 @@ var volatileInValues = []struct {
 
 // Normalize replaces volatile JSON values with a placeholder.
 func Normalize(r *Result, volatile []string) {
+	r.normalize(volatile)
+}
+
+// NormalizeRequest normalizes r for req (volatile keys and ETag origin).
+func NormalizeRequest(r *Result, req Request) {
+	r.KeyedETag = req.KeyedETag
+	r.normalize(req.Volatile)
+}
+
+func (r *Result) normalize(volatile []string) {
 	keys := append(append([]string{}, alwaysVolatile...), volatile...)
 	b := r.Body
 	for _, v := range volatileInValues {
@@ -137,7 +153,9 @@ func Compare(a, b *Result) []string {
 		if ignoredHeaders[k] {
 			continue
 		}
-		if (k == "Etag" || k == "Content-Length") && (a.Changed || b.Changed) {
+		if k == "Etag" && a.KeyedETag && b.KeyedETag {
+			// compared below
+		} else if (k == "Etag" || k == "Content-Length") && (a.Changed || b.Changed) {
 			continue
 		}
 		// Accepted deviation (docs/EQUIVALENCE.md): Go's net/http always

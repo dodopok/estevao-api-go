@@ -419,7 +419,7 @@ func (s *DefinitionSet) Normalize(values *rb.Map, allowUnknown, ignoreInvalid bo
 
 func raiseInvalid(key, reason string) {
 	panic(&web.DomainError{Class: "InvalidPreference", Code: "INVALID_PREFERENCE_VALUE", Message: key + ": " + reason,
-		Context: map[string]any{"preference_key": key}})
+		Context: rb.M("preference_key", key)})
 }
 
 func coerce(d *Definition, v any) any {
@@ -478,3 +478,61 @@ func rubyInteger(v any) (int, bool) {
 
 // ensure json import is used for future helpers.
 var _ = json.Valid
+
+// CategoriesForAPI ports prayer_book.preference_categories.includes(
+// :preference_definitions) mapped through as_json_for_api, with the number
+// of definitions and the newest definition's updated_at.
+func CategoriesForAPI(ctx context.Context, pb *store.PrayerBook) ([]any, int, *time.Time, error) {
+	rows, err := db.Q().Query(ctx, `SELECT id, key, name, description, icon, position FROM preference_categories
+		WHERE prayer_book_id = $1 ORDER BY position ASC, position ASC`, pb.ID)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	type category struct {
+		id                int64
+		key, name         string
+		description, icon *string
+		position          int
+	}
+	var cats []category
+	for rows.Next() {
+		var ct category
+		if err := rows.Scan(&ct.id, &ct.key, &ct.name, &ct.description, &ct.icon, &ct.position); err != nil {
+			rows.Close()
+			return nil, 0, nil, err
+		}
+		cats = append(cats, ct)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, 0, nil, err
+	}
+	ids := make([]int64, len(cats))
+	for i, ct := range cats {
+		ids[i] = ct.id
+	}
+	defs, err := ForCategories(ctx, ids)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+	list := []any{}
+	total := 0
+	var last *time.Time
+	for _, ct := range cats {
+		items := []any{}
+		for _, d := range defs {
+			if d.PreferenceCategoryID != ct.id {
+				continue
+			}
+			items = append(items, d.AsJSONForAPI())
+			total++
+			if last == nil || d.UpdatedAt.After(*last) {
+				t := d.UpdatedAt
+				last = &t
+			}
+		}
+		list = append(list, rb.M("id", ct.key, "key", ct.key, "name", ct.name, "description", rb.Deref(ct.description),
+			"icon", rb.Deref(ct.icon), "order", ct.position, "preferences", items))
+	}
+	return list, total, last, nil
+}

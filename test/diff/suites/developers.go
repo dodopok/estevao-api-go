@@ -120,6 +120,8 @@ func init() {
 				post("/api/v1/developers/playground/proxy", parish, `{"key_id":990021,"endpoint":"calendar/bogus"}`),
 				post("/api/v1/developers/playground/proxy", parish, `{"key_id":990021,"endpoint":"/up"}`),
 				post("/api/v1/developers/playground/proxy", parish, `{"key_id":990021}`),
+				post("/api/v1/developers/playground/proxy", parish, `{"key_id":990021,"endpoint":"/api/v2/days/2026-12-25","params":{"book":"loc_2015","include":"readings,collect"}}`, "generated_at"),
+				post("/api/v1/developers/playground/proxy", parish, `{"key_id":990021,"endpoint":"/api/v2/days/2026-12-25"}`, "generated_at"),
 			),
 		}
 	})
