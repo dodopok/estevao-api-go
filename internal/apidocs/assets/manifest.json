@@ -1,0 +1,166 @@
+{
+  "api": [
+    {
+      "path": "/v1/swagger.yaml",
+      "type": "text/yaml",
+      "bodies": {
+        "production": "api/production/v1/swagger.yaml",
+        "development": "api/development/v1/swagger.yaml"
+      }
+    },
+    {
+      "path": "/v2/swagger.yaml",
+      "type": "text/yaml",
+      "bodies": {
+        "production": "api/production/v2/swagger.yaml",
+        "development": "api/development/v2/swagger.yaml"
+      }
+    }
+  ],
+  "ui": [
+    {
+      "path": "/LICENSE",
+      "file": "ui/LICENSE",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/NOTICE",
+      "file": "ui/NOTICE",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/README.md",
+      "file": "ui/README.md",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/absolute-path.js",
+      "file": "ui/absolute-path.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/favicon-16x16.png",
+      "file": "ui/favicon-16x16.png",
+      "type": "image/png",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/favicon-32x32.png",
+      "file": "ui/favicon-32x32.png",
+      "type": "image/png",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/index.css",
+      "file": "ui/index.css",
+      "type": "text/css",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/index.html",
+      "file": "ui/index.html",
+      "type": "text/html",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/index.js",
+      "file": "ui/index.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/oauth2-redirect.html",
+      "file": "ui/oauth2-redirect.html",
+      "type": "text/html",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/package.json",
+      "file": "ui/package.json",
+      "type": "application/json",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-initializer.js",
+      "file": "ui/swagger-initializer.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-bundle.js",
+      "file": "ui/swagger-ui-bundle.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-bundle.js.map",
+      "file": "ui/swagger-ui-bundle.js.map",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-es-bundle-core.js",
+      "file": "ui/swagger-ui-es-bundle-core.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-es-bundle-core.js.map",
+      "file": "ui/swagger-ui-es-bundle-core.js.map",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-es-bundle.js",
+      "file": "ui/swagger-ui-es-bundle.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-es-bundle.js.map",
+      "file": "ui/swagger-ui-es-bundle.js.map",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-standalone-preset.js",
+      "file": "ui/swagger-ui-standalone-preset.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui-standalone-preset.js.map",
+      "file": "ui/swagger-ui-standalone-preset.js.map",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui.css",
+      "file": "ui/swagger-ui.css",
+      "type": "text/css",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui.css.map",
+      "file": "ui/swagger-ui.css.map",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui.js",
+      "file": "ui/swagger-ui.js",
+      "type": "text/javascript",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    },
+    {
+      "path": "/swagger-ui.js.map",
+      "file": "ui/swagger-ui.js.map",
+      "type": "text/plain",
+      "mtime": "Thu, 24 Sep 2026 02:53:57 GMT"
+    }
+  ]
+}

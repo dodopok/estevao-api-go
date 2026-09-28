@@ -47,6 +47,13 @@ type Response struct {
 	// Live responses are streamed (see Endpoint.Live).
 	Live    bool
 	KeepIDs bool
+	// NoETag skips Rack::ETag (a Rack app answering with a String status).
+	NoETag bool
+	// KeepTypeOn304 keeps Content-Type on a 304: Rack::ConditionalGet
+	// deletes "content-type", which misses a Rack app's mixed-case header.
+	KeepTypeOn304 bool
+	// HeadLength answers HEAD with the body's length (Rack::Files).
+	HeadLength bool
 }
 
 // Middleware may answer before the application (Rack::Attack).
@@ -58,8 +65,10 @@ type Server struct {
 	Endpoints map[string]Endpoint
 	Attack    Middleware
 	Static    func(r *http.Request) *Response
-	CORS      *CORS
-	Logger    *slog.Logger
+	// Mount answers for Rack apps mounted ahead of the routes (nil cascades).
+	Mount  func(r *http.Request) *Response
+	CORS   *CORS
+	Logger *slog.Logger
 	// ReportError receives unexpected failures (the New Relic hook).
 	ReportError func(c *Context, err any, stack []byte)
 }
@@ -134,7 +143,11 @@ func writeResponse(w http.ResponseWriter, r *http.Request, resp *Response) {
 		h["Date"] = nil
 	}
 	if r.Method == http.MethodHead {
-		h.Set("Content-Length", "0")
+		if resp.HeadLength {
+			h.Set("Content-Length", strconv.Itoa(len(resp.Body)))
+		} else {
+			h.Set("Content-Length", "0")
+		}
 		w.WriteHeader(resp.Status)
 		return
 	}
@@ -198,7 +211,7 @@ func (s *Server) showExceptions(r *http.Request, reqID string) (resp *Response) 
 func (s *Server) conditional(r *http.Request, reqID string) *Response {
 	resp := s.inner(r, reqID)
 	var digest string
-	if !resp.Live && (resp.Status == 200 || resp.Status == 201) && resp.Header.Get("Etag") == "" && resp.Header.Get("Last-Modified") == "" && len(resp.Body) > 0 {
+	if !resp.Live && !resp.NoETag && (resp.Status == 200 || resp.Status == 201) && resp.Header.Get("Etag") == "" && resp.Header.Get("Last-Modified") == "" && len(resp.Body) > 0 {
 		sum := sha256.Sum256(resp.Body)
 		digest = hex.EncodeToString(sum[:])[:32]
 		resp.Header.Set("Etag", `W/"`+digest+`"`)
@@ -214,7 +227,9 @@ func (s *Server) conditional(r *http.Request, reqID string) *Response {
 		if fresh(r, resp.Header) {
 			resp.Status = 304
 			resp.Live = false
-			resp.Header.Del("Content-Type")
+			if !resp.KeepTypeOn304 {
+				resp.Header.Del("Content-Type")
+			}
 			resp.Header.Del("Content-Length")
 			resp.Body = nil
 		}
@@ -247,6 +262,11 @@ func fresh(r *http.Request, h http.Header) bool {
 func (s *Server) inner(r *http.Request, reqID string) *Response {
 	if s.Attack != nil {
 		if resp := s.Attack(r); resp != nil {
+			return resp
+		}
+	}
+	if s.Mount != nil {
+		if resp := s.Mount(r); resp != nil {
 			return resp
 		}
 	}

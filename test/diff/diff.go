@@ -163,6 +163,12 @@ func Compare(a, b *Result) []string {
 		if k == "Content-Length" && a.Status == 304 && b.Status == 304 {
 			continue
 		}
+		// Accepted deviation (docs/EQUIVALENCE.md): net/http also drops
+		// Content-Type on 304, which Rack keeps when a mounted app set it
+		// with mixed case (Rswag's index page).
+		if k == "Content-Type" && a.Status == 304 && b.Status == 304 && bv(b, k) == "" {
+			continue
+		}
 		av, bv := strings.Join(a.Header.Values(k), ", "), strings.Join(b.Header.Values(k), ", ")
 		if k == "Location" {
 			av, bv = normalizeLocation(av), normalizeLocation(bv)
@@ -313,3 +319,5 @@ func normalizeLocation(v string) string {
 		return "/rails/active_storage/disk/<" + expField.ReplaceAllString(string(raw), "") + ">"
 	})
 }
+
+func bv(r *Result, k string) string { return strings.Join(r.Header.Values(k), ", ") }

@@ -8,6 +8,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/activestorage"
 	"github.com/dodopok/estevao-api-go/internal/api/v1"
 	"github.com/dodopok/estevao-api-go/internal/api/v2"
+	"github.com/dodopok/estevao-api-go/internal/apidocs"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/ratelimit"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -55,6 +56,7 @@ func NewServer(logger *slog.Logger, publicDir string) *web.Server {
 		Endpoints: Endpoints(),
 		Attack:    ratelimit.Middleware(),
 		Static:    Static(publicDir),
+		Mount:     apidocs.Serve,
 		CORS:      &web.CORS{Origins: origins},
 		Logger:    logger,
 	}

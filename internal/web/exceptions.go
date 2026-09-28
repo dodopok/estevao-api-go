@@ -46,8 +46,8 @@ var mimeSymbols = map[string]string{
 	"*/*": "all",
 }
 
-// mimeByExtension is Mime::Type.lookup_by_extension for renderable formats.
-var mimeByExtension = map[string]string{"json": "application/json", "xml": "application/xml", "yaml": "application/x-yaml", "html": "text/html", "text": "text/plain", "txt": "text/plain", "js": "text/javascript"}
+// mimeByExtension is Mime::EXTENSION_LOOKUP (Mime::Type.lookup_by_extension).
+var mimeByExtension = map[string]string{"aac": "audio/aac", "atom": "application/atom+xml", "bmp": "image/bmp", "css": "text/css", "csv": "text/csv", "gif": "image/gif", "gz": "application/gzip", "gzip": "application/gzip", "html": "text/html", "ics": "text/calendar", "jpe": "image/jpeg", "jpeg": "image/jpeg", "jpg": "image/jpeg", "js": "text/javascript", "json": "application/json", "m4a": "audio/aac", "m4v": "video/mp4", "markdown": "text/markdown", "md": "text/markdown", "mp1": "audio/mpeg", "mp2": "audio/mpeg", "mp3": "audio/mpeg", "mp4": "video/mp4", "mpe": "video/mpeg", "mpeg": "video/mpeg", "mpg4": "audio/aac", "mpg": "video/mpeg", "multipart_form": "multipart/form-data", "oga": "audio/ogg", "ogg": "audio/ogg", "opus": "audio/ogg", "otf": "font/otf", "pdf": "application/pdf", "pjpeg": "image/jpeg", "png": "image/png", "rss": "application/rss+xml", "spx": "audio/ogg", "svg": "image/svg+xml", "text": "text/plain", "tif": "image/tiff", "tiff": "image/tiff", "ttf": "font/ttf", "txt": "text/plain", "url_encoded_form": "application/x-www-form-urlencoded", "vcf": "text/vcard", "vtt": "text/vtt", "webm": "video/webm", "webp": "image/webp", "woff2": "font/woff2", "woff": "font/woff", "xhtml": "text/html", "xml": "application/xml", "yaml": "application/x-yaml", "yml": "application/x-yaml", "zip": "application/zip"}
 
 var paramSep = regexp.MustCompile(`;\s*\w+="?\w+"?`)
 

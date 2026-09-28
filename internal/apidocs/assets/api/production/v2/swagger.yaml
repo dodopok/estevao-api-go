@@ -1,0 +1,1622 @@
+---
+openapi: 3.0.1
+info:
+  title: Estevão API para desenvolvedores
+  version: v2
+  description: Catálogo litúrgico somente leitura. Cada requisição autenticada conta
+    como uma chamada; X-Request-Cost estima trabalho no servidor e não altera a cota.
+paths:
+  "/api/v2/days":
+    get:
+      summary: List liturgical days
+      tags:
+      - Days
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: "^[0-9]{4}$"
+      - name: include
+        in: query
+        required: false
+        description: 'Comma-separated: readings, readings.text, readings.morning,
+          readings.evening, readings.alternatives, collect, collect.text, celebrations,
+          explanation. Maximum 31 days with readings.text or explanation; otherwise
+          366.'
+        schema:
+          type: string
+      - name: service
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - daily
+          - eucharist
+          - morning
+          - evening
+        description: Explanation service when include=explanation; defaults to daily.
+      - name: fields[day]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[reading]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[collect]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Days in the requested range
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+              description: Relative server work; quota counts one call
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/Day"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+        '304':
+          description: Representation unchanged
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+        '400':
+          description: Invalid or missing range, include, fields, or book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '401':
+          description: Missing or unusable API key
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '422':
+          description: Unknown prayer book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+  "/api/v2/days/{date}":
+    get:
+      summary: Get one liturgical day
+      tags:
+      - Days
+      parameters:
+      - name: date
+        in: path
+        required: true
+        description: ISO date (YYYY-MM-DD) or today
+        schema:
+          type: string
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: include
+        in: query
+        required: false
+        description: 'Comma-separated: readings, readings.text, readings.morning,
+          readings.evening, readings.alternatives, collect, collect.text, celebrations,
+          explanation'
+        schema:
+          type: string
+      - name: service
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - daily
+          - eucharist
+          - morning
+          - evening
+        description: Explanation service when include=explanation; defaults to daily.
+      - name: fields[day]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[reading]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[collect]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: If-None-Match
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Liturgical day
+          headers:
+            ETag:
+              schema:
+                type: string
+            X-Request-Cost:
+              schema:
+                type: integer
+              description: Relative server work; quota counts one call
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/Day"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+        '304':
+          description: Representation unchanged
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+        '400':
+          description: Invalid date, include, fields, or missing book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '401':
+          description: Missing or unusable API key
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '422':
+          description: Unknown prayer book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+  "/api/v2/liturgical-explanations/{date}":
+    get:
+      summary: Explain liturgical decisions for a date
+      tags:
+      - Liturgical explanations
+      parameters:
+      - name: date
+        in: path
+        required: true
+        description: ISO date (YYYY-MM-DD) or today
+        schema:
+          type: string
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: service
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - daily
+          - eucharist
+          - morning
+          - evening
+        description: Reading service to explain; defaults to daily.
+      - name: bible
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: psalter
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: lectionary
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: reading_type
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: If-None-Match
+        in: header
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Structured explanation and provenance for the day
+          headers:
+            ETag:
+              schema:
+                type: string
+            X-Request-Cost:
+              schema:
+                type: integer
+              description: Relative server work; quota counts one call
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/LiturgicalExplanation"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+        '304':
+          description: Representation unchanged
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+        '400':
+          description: Invalid date or service, or missing book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '401':
+          description: Missing or unusable API key
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '422':
+          description: Unknown prayer book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+  "/api/v2/days/{date}/readings":
+    get:
+      summary: Get readings for a service
+      tags:
+      - Readings
+      parameters:
+      - name: date
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: service
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - daily
+          - eucharist
+          - morning
+          - evening
+          - all
+      - name: include
+        in: query
+        required: false
+        description: 'Comma-separated: text, alternatives'
+        schema:
+          type: string
+      - name: text_format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - verses
+          - plain
+          - markdown
+      - name: fields[reading]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Reading references and optional text
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - date
+                    - service
+                    - cycle
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                      service:
+                        type: string
+                      cycle:
+                        type: string
+                        nullable: true
+                      readings:
+                        type: array
+                        items:
+                          "$ref": "#/components/schemas/Reading"
+                      services:
+                        type: object
+                        additionalProperties:
+                          type: array
+                          items:
+                            "$ref": "#/components/schemas/Reading"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+        '304':
+          description: Representation unchanged
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+        '400':
+          description: Invalid date, service, include, or fields
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '401':
+          description: Missing or unusable API key
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '422':
+          description: Unknown prayer book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+  "/api/v2/collects/{date}":
+    get:
+      summary: Get collects for a date
+      tags:
+      - Collects
+      parameters:
+      - name: date
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: include
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - text
+      - name: fields[collect]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Collects with optional prayer text
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - date
+                    - collects
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                      collects:
+                        type: array
+                        items:
+                          "$ref": "#/components/schemas/Collect"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+        '304':
+          description: Representation unchanged
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+        '400':
+          description: Invalid date, include, or fields
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '401':
+          description: Missing or unusable API key
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '422':
+          description: Unknown prayer book
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+  "/api/v2/passages":
+    get:
+      summary: Get Bible passage text
+      tags:
+      - Passages
+      parameters:
+      - name: ref
+        in: query
+        required: true
+        description: Bible reference, e.g. João 3:16
+        schema:
+          type: string
+      - name: bible
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: text_format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - verses
+          - plain
+          - markdown
+      responses:
+        '200':
+          description: Passage text
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    required:
+                    - reference
+                    - bible
+                    properties:
+                      reference:
+                        type: string
+                      bible:
+                        type: string
+                      text:
+                        "$ref": "#/components/schemas/ReadingText"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+        '304':
+          description: Representation unchanged
+          headers:
+            X-Request-Cost:
+              schema:
+                type: integer
+        '400':
+          description: Missing reference or Bible version, or invalid format
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '401':
+          description: Missing or unusable API key
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '404':
+          description: No text for this reference and Bible version
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+        '422':
+          description: Unknown Bible version
+          content:
+            application/problem+json:
+              schema:
+                "$ref": "#/components/schemas/Problem"
+  "/api/v2/prayer-books":
+    get:
+      summary: List prayer books
+      tags:
+      - Catalogs
+      parameters:
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[prayer_book]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Prayer book catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/PrayerBook"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/prayer-books/{code}":
+    parameters:
+    - name: code
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Get prayer book details and capabilities
+      tags:
+      - Catalogs
+      responses:
+        '200':
+          description: Prayer book details
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/PrayerBook"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/prayer-books/{code}/preferences":
+    parameters:
+    - name: code
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: Get supported preferences for a prayer book
+      tags:
+      - Catalogs
+      responses:
+        '200':
+          description: Prayer book preference definitions
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/PrayerBookPreferences"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/bible-versions":
+    get:
+      summary: List Bible versions
+      tags:
+      - Catalogs
+      parameters:
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[bible_version]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Bible version catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/BibleVersion"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/celebrations":
+    get:
+      summary: Search and list celebrations
+      tags:
+      - Celebrations
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: month
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: day
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: year
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: movable
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: limit
+        in: query
+        required: false
+        maximum: 100
+        schema:
+          type: integer
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[celebration]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[celebration_type]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Celebration page
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                - links
+                properties:
+                  data:
+                    type: array
+                    items:
+                      "$ref": "#/components/schemas/Celebration"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+                  links:
+                    type: object
+                    properties:
+                      self:
+                        type: string
+                      next:
+                        type: string
+  "/api/v2/celebrations/types":
+    get:
+      summary: List celebration types
+      tags:
+      - Celebrations
+      parameters:
+      - name: lang
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[celebration_type]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Celebration types
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        value:
+                          type: string
+                        name:
+                          type: string
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/celebrations/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Get celebration details
+      tags:
+      - Celebrations
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Celebration detail
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    "$ref": "#/components/schemas/Celebration"
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/years/{year}":
+    parameters:
+    - name: year
+      in: path
+      required: true
+      pattern: "^[0-9]{4}$"
+      schema:
+        type: string
+    get:
+      summary: Get annual overview
+      tags:
+      - Years
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: fields[annual_overview]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[season]
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: fields[key_date]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Annual overview
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: true
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/years/{year}/seasons":
+    parameters:
+    - name: year
+      in: path
+      required: true
+      pattern: "^[0-9]{4}$"
+      schema:
+        type: string
+    get:
+      summary: List seasons in a year
+      tags:
+      - Years
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: fields[season]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Liturgical seasons
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: true
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/years/{year}/key-dates":
+    parameters:
+    - name: year
+      in: path
+      required: true
+      pattern: "^[0-9]{4}$"
+      schema:
+        type: string
+    get:
+      summary: List key dates in a year
+      tags:
+      - Years
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: fields[key_date]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Key dates
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    additionalProperties: true
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+  "/api/v2/years/{year}/lectionary-cycle":
+    parameters:
+    - name: year
+      in: path
+      required: true
+      pattern: "^[0-9]{4}$"
+      schema:
+        type: string
+    get:
+      summary: Get lectionary cycles for a year
+      tags:
+      - Years
+      parameters:
+      - name: book
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: fields[lectionary_cycle]
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Lectionary cycles
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                - meta
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      year:
+                        type: integer
+                      sunday:
+                        type: string
+                      weekday:
+                        type: string
+                  meta:
+                    "$ref": "#/components/schemas/Meta"
+servers:
+- url: https://api.caminhoanglicano.com.br
+  description: Production server
+security:
+- api_key_auth: []
+components:
+  securitySchemes:
+    api_key_auth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Problem:
+      type: object
+      required:
+      - type
+      - title
+      - status
+      - code
+      - detail
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        code:
+          type: string
+        detail:
+          type: string
+        documentation_url:
+          type: string
+          format: uri
+        request_id:
+          type: string
+    Reading:
+      type: object
+      required:
+      - slot
+      - reference
+      properties:
+        slot:
+          type: string
+        reference:
+          type: string
+        title:
+          type: string
+        alternatives:
+          type: array
+          items:
+            type: string
+        text:
+          nullable: true
+          oneOf:
+          - "$ref": "#/components/schemas/ReadingText"
+    ReadingText:
+      type: object
+      required:
+      - format
+      - bible
+      properties:
+        format:
+          type: string
+          enum:
+          - verses
+          - plain
+          - markdown
+        bible:
+          type: string
+        content:
+          type: string
+        verses:
+          type: array
+          items:
+            type: object
+            properties:
+              number:
+                type: integer
+              text:
+                type: string
+    Collect:
+      type: object
+      properties:
+        title:
+          type: string
+        subtitle:
+          type: string
+        kind:
+          type: string
+        sunday_reference:
+          type: string
+        celebration_id:
+          type: integer
+        text:
+          type: string
+        preface:
+          type: string
+    ExplanationPresentation:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+    ExplanationReason:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    ExplanationOccurrence:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        type_label:
+          type: string
+        date:
+          type: string
+          format: date
+        selected:
+          type: boolean
+        discarded_reason:
+          "$ref": "#/components/schemas/ExplanationReason"
+      additionalProperties: true
+    LiturgicalExplanation:
+      type: object
+      required:
+      - date
+      - prayer_book_code
+      - locale
+      - calendar
+      - celebration
+      - color
+      - transfers
+      - reading_guide
+      - readings
+      - partial
+      properties:
+        date:
+          type: string
+          format: date
+        prayer_book_code:
+          type: string
+        locale:
+          type: string
+        presentation:
+          "$ref": "#/components/schemas/ExplanationPresentation"
+        calendar:
+          type: object
+          properties:
+            season:
+              type: string
+              nullable: true
+            season_meaning:
+              "$ref": "#/components/schemas/ExplanationReason"
+            season_range:
+              type: object
+              required:
+              - start_date
+              - end_date
+              - days_remaining
+              properties:
+                start_date:
+                  type: string
+                  format: date
+                end_date:
+                  type: string
+                  format: date
+                days_remaining:
+                  type: integer
+                presentation:
+                  "$ref": "#/components/schemas/ExplanationPresentation"
+            cycle:
+              type: string
+            week:
+              type: integer
+            proper:
+              type: integer
+          additionalProperties: true
+        celebration:
+          type: object
+          properties:
+            selected:
+              type: object
+              nullable: true
+              allOf:
+              - "$ref": "#/components/schemas/ExplanationOccurrence"
+            candidates:
+              type: array
+              items:
+                "$ref": "#/components/schemas/ExplanationOccurrence"
+            reason:
+              "$ref": "#/components/schemas/ExplanationReason"
+            presentation:
+              "$ref": "#/components/schemas/ExplanationPresentation"
+          additionalProperties: true
+        color:
+          type: object
+          properties:
+            value:
+              type: string
+            code:
+              type: string
+            source:
+              type: string
+            source_label:
+              type: string
+            reason:
+              "$ref": "#/components/schemas/ExplanationReason"
+            meaning:
+              "$ref": "#/components/schemas/ExplanationReason"
+            presentation:
+              "$ref": "#/components/schemas/ExplanationPresentation"
+          additionalProperties: true
+        transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                type: string
+                format: date
+              to:
+                type: string
+                format: date
+              reason:
+                "$ref": "#/components/schemas/ExplanationReason"
+              presentation:
+                "$ref": "#/components/schemas/ExplanationPresentation"
+        reading_guide:
+          type: object
+          additionalProperties: true
+        readings:
+          type: array
+          items:
+            type: object
+            required:
+            - slot
+            - reference
+            - source
+            - service_type
+            - reason
+            - presentation
+            properties:
+              slot:
+                type: string
+              reference:
+                type: string
+              alternatives:
+                type: array
+                items:
+                  type: string
+              source:
+                type: string
+              source_label:
+                type: string
+              track:
+                type: string
+              track_label:
+                type: string
+              cycle:
+                type: string
+              cycle_label:
+                type: string
+              service_type:
+                type: string
+              service_type_label:
+                type: string
+              reason:
+                "$ref": "#/components/schemas/ExplanationReason"
+              fallback:
+                type: object
+                properties:
+                  applied:
+                    type: boolean
+                  rule:
+                    type: string
+              presentation:
+                "$ref": "#/components/schemas/ExplanationPresentation"
+            additionalProperties: true
+        partial:
+          type: object
+          required:
+          - partial
+          - missing
+          properties:
+            partial:
+              type: boolean
+            missing:
+              type: array
+              items:
+                type: string
+      additionalProperties: true
+    Day:
+      type: object
+      required:
+      - date
+      properties:
+        date:
+          type: string
+          format: date
+        day_of_week:
+          type: string
+        liturgical_year:
+          type: string
+        season:
+          type: object
+        color:
+          type: string
+        celebration:
+          type: object
+          nullable: true
+        celebrations:
+          type: array
+          items:
+            type: object
+        explanation:
+          "$ref": "#/components/schemas/LiturgicalExplanation"
+        collect:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Collect"
+        readings:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Reading"
+        morning_readings:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Reading"
+        evening_readings:
+          type: array
+          items:
+            "$ref": "#/components/schemas/Reading"
+      additionalProperties: true
+    PrayerBook:
+      type: object
+      required:
+      - code
+      - name
+      - language
+      - capabilities
+      - preferences_url
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        language:
+          type: string
+        jurisdiction:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        is_recommended:
+          type: boolean
+        image_url:
+          type: string
+          nullable: true
+        thumbnail_url:
+          type: string
+          nullable: true
+        pdf_url:
+          type: string
+          nullable: true
+        preferences_url:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+        capabilities:
+          type: object
+          additionalProperties: true
+    PreferenceDefinition:
+      type: object
+      required:
+      - key
+      - name
+      - type
+      - default_value
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+        required:
+          type: boolean
+        default_value: {}
+        simple_value: {}
+        options:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        depends_on:
+          type: object
+          nullable: true
+      additionalProperties: true
+    PreferenceCategory:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        order:
+          type: integer
+        preferences:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PreferenceDefinition"
+    PrayerBookPreferences:
+      type: object
+      required:
+      - prayer_book
+      - categories
+      - preference_count
+      properties:
+        prayer_book:
+          type: string
+        categories:
+          type: array
+          items:
+            "$ref": "#/components/schemas/PreferenceCategory"
+        preference_count:
+          type: integer
+        preferences_updated_at:
+          type: string
+          format: date-time
+    BibleVersion:
+      type: object
+      required:
+      - code
+      - name
+      - language
+      - versification_system
+      - is_recommended
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+          nullable: true
+        language:
+          type: string
+        description:
+          type: string
+          nullable: true
+        publisher:
+          type: string
+          nullable: true
+        year:
+          type: integer
+          nullable: true
+        is_recommended:
+          type: boolean
+        versification_system:
+          type: string
+        license:
+          type: string
+          nullable: true
+    Celebration:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+        slug:
+          type: string
+          nullable: true
+        name:
+          type: string
+        latin_name:
+          type: string
+          nullable: true
+        type:
+          type: string
+        rank:
+          type: integer
+        color:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        movable:
+          type: boolean
+        fixed_date:
+          type: object
+          properties:
+            month:
+              type: integer
+            day:
+              type: integer
+        date:
+          type: string
+          format: date
+        transferred:
+          type: boolean
+        can_be_transferred:
+          type: boolean
+        calculation_rule:
+          type: string
+          nullable: true
+        transfer_rules:
+          type: object
+        collects:
+          type: array
+          items:
+            type: object
+        readings:
+          type: array
+          items:
+            type: object
+      additionalProperties: true
+    Meta:
+      type: object
+      required:
+      - generated_at
+      properties:
+        generated_at:
+          type: string
+          format: date-time
+        prayer_book:
+          type: string
+        language:
+          type: string
+        bible:
+          type: string
+        lectionary_variant:
+          type: string
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+        count:
+          type: integer
+        total:
+          type: integer
+        year:
+          type: integer
+        catalog_updated_at:
+          type: string
+          format: date-time
+        preference_count:
+          type: integer
+        preferences_updated_at:
+          type: string
+          format: date-time
