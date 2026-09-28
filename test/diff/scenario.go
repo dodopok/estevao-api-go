@@ -52,6 +52,11 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		return nil, err
 	}
 	defer conn.Close(ctx)
+	// Jobs an earlier run left unperformed would otherwise be performed by
+	// this scenario's Settle on the oracle side.
+	if _, err := conn.Exec(ctx, `DELETE FROM solid_queue_jobs WHERE finished_at IS NULL`); err != nil {
+		return nil, fmt.Errorf("discard pending jobs: %w", err)
+	}
 	if s.Setup != "" {
 		if _, err := conn.Exec(ctx, s.Setup); err != nil {
 			return nil, fmt.Errorf("setup: %w", err)

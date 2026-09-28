@@ -195,26 +195,33 @@ func (b *Blob) ServiceURL(disposition, requestBase string, now time.Time) (strin
 	if d := b.ForcedDispositionForServing(); d != "" {
 		disposition = d
 	}
-	if b.ServiceName == "railway_avatars" {
-		expiresIn := 300
-		return s3.FromEnv().PresignedGet(b.Key, expiresIn, DispositionWith(disposition, b.Filename), b.ContentTypeForServing(), now), nil
+	var ct any
+	if b.ServiceName == "railway_avatars" || b.ContentType != nil || servedAsBinary[b.ContentTypeString()] {
+		ct = b.ContentTypeForServing()
 	}
-	if _, ok := DiskRoot(b.ServiceName); ok {
+	return ServiceObjectURL(b.ServiceName, b.Key, 300, b.Filename, disposition, ct, requestBase, now)
+}
+
+// ServiceObjectURL ports service.url(key, expires_in:, filename:,
+// disposition:, content_type:) on a configured service (config/storage.yml):
+// a presigned GET on S3, a signed blob_key URL on Disk (without expiry on
+// the public production Disk service).
+func ServiceObjectURL(service, key string, expiresIn int, filename, disposition string, contentType any, requestBase string, now time.Time) (string, error) {
+	if service == "railway_avatars" {
+		return s3.FromEnv().PresignedGet(key, expiresIn, DispositionWith(disposition, filename), rb.ToS(contentType), now), nil
+	}
+	if _, ok := DiskRoot(service); ok {
 		var exp *time.Time
-		if b.ServiceName != "production" { // the production Disk service is public
-			t := now.Add(5 * time.Minute)
+		if service != "production" { // the production Disk service is public
+			t := now.Add(time.Duration(expiresIn) * time.Second)
 			exp = &t
 		}
-		var ct any
-		if b.ContentType != nil || servedAsBinary[b.ContentTypeString()] {
-			ct = b.ContentTypeForServing()
-		}
-		token := GenerateData(rb.M("key", b.Key, "disposition", DispositionWith(disposition, b.Filename),
-			"content_type", ct, "service_name", b.ServiceName), "blob_key", exp)
+		token := GenerateData(rb.M("key", key, "disposition", DispositionWith(disposition, filename),
+			"content_type", contentType, "service_name", service), "blob_key", exp)
 		return requestBase + "/rails/active_storage/disk/" + escapeSegment(token, false) + "/" +
-			escapeSegment(SanitizedFilename(b.Filename), true), nil
+			escapeSegment(SanitizedFilename(filename), true), nil
 	}
-	return "", fmt.Errorf("Missing configuration for the %s Active Storage service", b.ServiceName)
+	return "", fmt.Errorf("Missing configuration for the %s Active Storage service", service)
 }
 
 // DiskPath ports DiskService#path_for with its traversal checks.
