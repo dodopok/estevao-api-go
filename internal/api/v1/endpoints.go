@@ -87,6 +87,8 @@ func Endpoints() map[string]web.HandlerFunc {
 		"api/v1/background_music#favorites":          BackgroundMusicFavorites,
 		"api/v1/background_music#create_favorite":    BackgroundMusicCreateFavorite,
 		"api/v1/background_music#destroy_favorite":   BackgroundMusicDestroyFavorite,
+		"api/v1/notifications#send_to_users":         NotificationsSendToUsers,
+		"api/v1/notifications#broadcast":             NotificationsBroadcast,
 		"api/v1/life_rules#index":                    LifeRulesIndex,
 		"api/v1/life_rules#show":                     LifeRulesShow,
 		"api/v1/life_rules#my":                       LifeRulesMy,

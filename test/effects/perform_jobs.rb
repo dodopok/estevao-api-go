@@ -4,6 +4,8 @@
 # an unpublication, say) run in a following pass, as a worker would run them;
 # retries scheduled for later are left alone.
 #   bin/rails runner perform_jobs.rb Audio::RecordUserUsageJob
+require File.expand_path("../oracle/patches", __dir__)
+
 classes = ARGV
 count = 0
 5.times do

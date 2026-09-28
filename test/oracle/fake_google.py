@@ -20,6 +20,10 @@ Strapi (POST /strapi/api/internal/rosary-prayers/{upsert-approved,unpublish},
 bearer "strapi-internal-test") publishes as documentId "doc-<prayer id>"
 unless the prayer name or document id is one of the STRAPI-* / doc-* switches.
 GET /__strapi lists the requests; DELETE clears.
+
+FCM (POST /v1/projects/<project>/messages:send, bearer "fake-admin-token")
+answers per registration token from FCM below (200 otherwise). GET /__fcm
+lists the requests (sorted); DELETE clears.
 """
 import json
 import re
@@ -31,6 +35,7 @@ deleted = []
 revenuecat_calls = []
 perplexity_bodies = []
 strapi_requests = []
+fcm_requests = []
 lock = threading.Lock()
 
 
@@ -103,6 +108,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/__perplexity":
             with lock:
                 return self.reply(200, list(perplexity_bodies))
+        if self.path == "/__fcm":
+            with lock:
+                return self.reply(200, sorted(fcm_requests))
         if self.path == "/__strapi":
             # Sorted: the calls come from background jobs, whose relative order
             # is not part of the contract (Solid Queue workers run them
@@ -139,6 +147,10 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 strapi_requests.clear()
             return self.reply(200, {})
+        if self.path == "/__fcm":
+            with lock:
+                fcm_requests.clear()
+            return self.reply(200, {})
         self.reply(404, {})
 
     def do_POST(self):
@@ -171,6 +183,16 @@ class Handler(BaseHTTPRequestHandler):
             if b"assertion=" not in data:
                 return self.reply(400, {"error": "invalid_grant"})
             return self.reply(200, {"access_token": "fake-admin-token", "expires_in": 3600, "token_type": "Bearer"})
+        if self.path.endswith("/messages:send"):
+            with lock:
+                fcm_requests.append(self.path + " " + str(self.headers.get("Authorization")) + " " + data.decode())
+            if self.headers.get("Authorization") != "Bearer fake-admin-token":
+                return self.reply(401, {"error": {"code": 401, "message": "UNAUTHENTICATED"}})
+            token = ((json.loads(data or b"{}").get("message") or {}).get("token")) or ""
+            status, body = FCM.get(token.split("#")[0], (200, {"name": "projects/estevao-test/messages/0:1"}))
+            if isinstance(body, str):
+                return self.reply_raw(status, body)
+            return self.reply(status, body)
         if self.path.endswith("/accounts:delete"):
             if self.headers.get("Authorization") != "Bearer fake-admin-token":
                 return self.reply(401, {"error": {"message": "UNAUTHENTICATED"}})
@@ -181,6 +203,25 @@ class Handler(BaseHTTPRequestHandler):
                 deleted.append(uid)
             return self.reply(200, {"kind": "identitytoolkit#DeleteAccountResponse"})
         self.reply(404, {})
+
+
+def fcm_error(code, message, status, unregistered=False):
+    error = {"code": code, "message": message, "status": status}
+    if unregistered:
+        error["details"] = [{"@type": "type.googleapis.com/google.firebase.fcm.v1.FcmError", "errorCode": "UNREGISTERED"}]
+    return code, {"error": error}
+
+
+# registration token (before any "#suffix") -> (status, body)
+FCM = {
+    "fcm-unregistered": fcm_error(404, "Requested entity was not found.", "NOT_FOUND", True),
+    "fcm-unreg400": fcm_error(400, "Requested entity was not found.", "INVALID_ARGUMENT", True),
+    "fcm-badtoken": fcm_error(400, "The registration token is not a valid FCM registration token", "INVALID_ARGUMENT"),
+    "fcm-403": fcm_error(403, "SenderId mismatch", "PERMISSION_DENIED"),
+    "fcm-500": fcm_error(500, "Internal error", "INTERNAL"),
+    "fcm-429": fcm_error(429, "Quota exceeded", "RESOURCE_EXHAUSTED"),
+    "fcm-rawbody": (400, "oops, not json"),
+}
 
 
 def perplexity_reply(payload):
