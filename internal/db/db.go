@@ -69,3 +69,24 @@ func UniqueViolation(err error) bool {
 func InTx(ctx context.Context, f func(tx pgx.Tx) error) error {
 	return pgx.BeginFunc(ctx, Pool, f)
 }
+
+type txKey struct{}
+
+// Conn is the connection Active Record would use here: the transaction
+// Transaction opened on ctx, or the pool outside one.
+func Conn(ctx context.Context) Querier {
+	if tx, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
+		return tx
+	}
+	return Pool
+}
+
+// Transaction ports `transaction do ... end`: f runs in a transaction that
+// every Conn(ctx) query inside it shares, and a nested call joins the
+// enclosing one instead of opening its own.
+func Transaction(ctx context.Context, f func(ctx context.Context, tx pgx.Tx) error) error {
+	if tx, ok := ctx.Value(txKey{}).(pgx.Tx); ok {
+		return f(ctx, tx)
+	}
+	return pgx.BeginFunc(ctx, Pool, func(tx pgx.Tx) error { return f(context.WithValue(ctx, txKey{}, tx), tx) })
+}

@@ -300,6 +300,11 @@ func (s *Server) dispatch(r *http.Request, reqID string, m *Match, ep Endpoint) 
 	if c.written && c.Body != nil && c.varyAccept() && c.Header.Get("Vary") == "" {
 		c.Header.Set("Vary", "Accept")
 	}
+	if c.Status == 204 {
+		// No-content responses go out without a Content-Type (the one
+		// set_json_headers put there does not survive).
+		c.Header.Del("Content-Type")
+	}
 	return &Response{Status: c.Status, Header: c.Header, Body: c.Body, Live: ep.Live, KeepIDs: c.KeepRequestIDs}
 }
 
@@ -309,9 +314,18 @@ func (s *Server) run(c *Context, ep Endpoint) {
 		if rec == nil {
 			return
 		}
-		switch e := rec.(type) {
-		case haltSignal:
+		if _, halted := rec.(haltSignal); halted {
+			s.afterAction(c, ep)
 			return
+		}
+		// An exception leaving the action meets the same ensure: the ParseError
+		// it raises replaces the exception.
+		if _, isStatus := rec.(exceptionStatus); !isStatus && ep.Application && c.params == nil && jsonContentTypes[c.contentType()] {
+			if pe := c.parseError(); pe != nil {
+				rec = pe
+			}
+		}
+		switch e := rec.(type) {
 		case exceptionStatus:
 			panic(e)
 		case *DomainError:
@@ -353,6 +367,44 @@ func (s *Server) run(c *Context, ep Endpoint) {
 		c.JSON(500, rb.M("error", "Internal server error", "message", msg, "trace_id", nil))
 	}()
 	ep.Handler(c)
+	s.afterAction(c, ep)
+}
+
+// parseError is the ParseError reading params would raise, if any.
+func (c *Context) parseError() (pe *StandardError) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			if se, ok := rec.(*StandardError); ok && se.Class == "ActionDispatch::Http::Parameters::ParseError" {
+				pe = se
+				return
+			}
+			panic(rec)
+		}
+	}()
+	c.BodyParams()
+	return nil
+}
+
+// afterAction ports the ensure of ApplicationController#track_request_timing,
+// which reads params[:office_type] after every action. For a JSON body that
+// does not parse, that read raises ParseError once the action has already
+// rendered; rescue_from then renders again (DoubleRenderError), which only
+// the public exceptions app answers: a bare 500.
+func (s *Server) afterAction(c *Context, ep Endpoint) {
+	if !ep.Application || !jsonContentTypes[c.contentType()] || c.params != nil {
+		return
+	}
+	func() {
+		defer func() {
+			if rec := recover(); rec != nil {
+				if se, ok := rec.(*StandardError); ok && se.Class == "ActionDispatch::Http::Parameters::ParseError" {
+					panic(exceptionStatus(500))
+				}
+				panic(rec)
+			}
+		}()
+		c.Params()
+	}()
 }
 
 // varyAccept ports ActionDispatch::Request#should_apply_vary_header?.

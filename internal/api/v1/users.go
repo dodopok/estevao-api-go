@@ -233,29 +233,8 @@ func preferencesParams(c *web.Context) *rb.Map {
 	}
 	out := permitHash(p, preferenceBaseKeys)
 	if v, ok := p.Lookup("prayer_times"); ok {
-		switch x := v.(type) {
-		case []any:
-			list := []any{}
-			for _, e := range x {
-				if m, ok := e.(*rb.Map); ok {
-					list = append(list, permitHash(m, prayerTimeKeys))
-				}
-			}
-			out.Set("prayer_times", list)
-		case *rb.Map:
-			fieldsFor := x.Len() > 0
-			x.Each(func(k string, e any) {
-				if _, isMap := e.(*rb.Map); !digitsOnly.MatchString(k) || !isMap {
-					fieldsFor = false
-				}
-			})
-			if fieldsFor {
-				h := rb.NewMap()
-				x.Each(func(k string, e any) { h.Set(k, permitHash(e.(*rb.Map), prayerTimeKeys)) })
-				out.Set("prayer_times", h)
-			} else {
-				out.Set("prayer_times", permitHash(x, prayerTimeKeys))
-			}
+		if permitted, ok := web.PermitHashOrArray(v, func(m *rb.Map) *rb.Map { return permitHash(m, prayerTimeKeys) }); ok {
+			out.Set("prayer_times", permitted)
 		}
 	}
 	skip := map[string]bool{"prayer_times": true}

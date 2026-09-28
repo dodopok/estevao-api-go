@@ -109,8 +109,41 @@ func (c *Context) Params() *rb.Map {
 	}
 	merged.Set("controller", c.Controller)
 	merged.Set("action", c.Action)
+	c.wrapParameters(merged)
 	c.params = merged
 	return merged
+}
+
+type wrapperOptions struct {
+	Name    string
+	Include []string
+}
+
+// jsonContentTypes are the content types ActionDispatch registers for the
+// :json mime type (the only ones its JSON parameter parser handles).
+var jsonContentTypes = map[string]bool{"application/json": true, "text/x-json": true, "application/jsonrequest": true}
+
+func (c *Context) contentType() string {
+	return strings.ToLower(strings.TrimSpace(strings.SplitN(c.R.Header.Get("Content-Type"), ";", 2)[0]))
+}
+
+// wrapParameters ports ActionController::ParamsWrapper (wrap_parameters
+// format: [:json], on by default since Rails 7): a JSON request whose params
+// lack the controller's key gets the body parameters named by the model's
+// attributes (in that order) under it.
+func (c *Context) wrapParameters(merged *rb.Map) {
+	opts, ok := paramsWrapper[c.Controller]
+	if !ok || !jsonContentTypes[c.contentType()] || merged.Has(opts.Name) {
+		return
+	}
+	body := c.BodyParams()
+	wrapped := rb.NewMap()
+	for _, k := range opts.Include {
+		if v, ok := body.Lookup(k); ok {
+			wrapped.Set(k, v)
+		}
+	}
+	merged.Set(opts.Name, wrapped)
 }
 
 // QueryParams returns the parsed query string.
@@ -143,15 +176,18 @@ func (c *Context) BodyParams() *rb.Map {
 	if c.body != nil {
 		return c.body
 	}
-	ct := strings.ToLower(strings.TrimSpace(strings.SplitN(c.R.Header.Get("Content-Type"), ";", 2)[0]))
+	ct := c.contentType()
 	raw := c.RawBody()
 	m := rb.NewMap()
 	switch {
-	case ct == "application/json" || strings.HasSuffix(ct, "+json"):
+	case jsonContentTypes[ct]:
 		if len(strings.TrimSpace(string(raw))) > 0 {
 			v, err := rb.ParseJSON(raw)
 			if err != nil {
-				panic(exceptionStatus(500))
+				// Raised inside process_action (params wrapping reads the body), so
+				// an application controller's rescue_from StandardError answers it.
+				panic(&StandardError{Class: "ActionDispatch::Http::Parameters::ParseError",
+					Message: "Error occurred while parsing request parameters"})
 			}
 			if mm, ok := v.(*rb.Map); ok {
 				m = mm

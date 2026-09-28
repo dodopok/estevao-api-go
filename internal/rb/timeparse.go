@@ -336,3 +336,30 @@ func AdvanceYears(t time.Time, n int) time.Time {
 	h, mi, s := local.Clock()
 	return RubyLocalTime(y, m, d, h, mi, s, local.Nanosecond(), AppZone)
 }
+
+var xmlschemaRegex = regexp.MustCompile(`(?i)\A[ \t\n\v\f\r]*(-?[0-9]+)-([0-9][0-9])-([0-9][0-9])T([0-9][0-9]):([0-9][0-9]):([0-9][0-9])(\.[0-9]+)?(Z|[+-][0-9][0-9](?::?[0-9][0-9])?)?[ \t\n\v\f\r]*\z`)
+
+// TimeXMLSchema ports Time.xmlschema / Time.iso8601 (Ruby 3.2): the full
+// date-time form only; a time without a zone is local to loc.
+func TimeXMLSchema(s string, loc *time.Location) (time.Time, error) {
+	m := xmlschemaRegex.FindStringSubmatch(s)
+	if m == nil {
+		return time.Time{}, errors.New("invalid xmlschema format: " + Inspect(s))
+	}
+	num := func(x string) int64 { n, _ := strconv.ParseInt(x, 10, 64); return n }
+	y, mo, d, h, mi, sec := num(m[1]), num(m[2]), num(m[3]), num(m[4]), num(m[5]), num(m[6])
+	nanos := new(big.Rat)
+	if m[7] != "" {
+		frac := secFraction(m[7][1:])
+		nanos.Mul(frac, big.NewRat(1_000_000_000, 1))
+	}
+	if m[8] != "" {
+		off := ZoneOffset(m[8], time.Now().Year(), loc)
+		if off == nil {
+			return time.Time{}, errors.New("invalid xmlschema format: " + Inspect(s))
+		}
+		y, mo, d, h, mi, sec = applyOffset(y, mo, d, h, mi, sec, *off)
+		return timeArg(y, mo, d, h, mi, sec, nanos, time.UTC)
+	}
+	return timeArg(y, mo, d, h, mi, sec, nanos, loc)
+}

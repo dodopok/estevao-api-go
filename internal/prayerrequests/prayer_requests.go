@@ -161,7 +161,7 @@ func (r *Request) errors(ctx context.Context, create bool) []string {
 	if raw == nil && r.Position != nil {
 		raw = *r.Position
 	}
-	if m := rb.Numericality(raw, true, &zero); m != "" {
+	if m := rb.Numericality(raw, true, rb.GTE(0)); m != "" {
 		msgs = append(msgs, "Position "+m)
 	}
 	if r.WeekStart.Wday() != 0 {

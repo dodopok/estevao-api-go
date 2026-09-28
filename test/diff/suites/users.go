@@ -21,7 +21,10 @@ import (
 
 // userFixture recreates the users the users scenarios act as, at fixed ids
 // so every id in a response is the same on both sides.
-const userFixture = `
+// userFixture starts by removing the rows that block deleting the users.
+const userFixture = rosaryCleanup + lifeRuleCleanup + userFixtureBase
+
+const userFixtureBase = `
 -- Every table with a foreign key to users loses the fixture users' rows
 -- first (a few passes, so rows that other fixture rows reference go last).
 DO $$

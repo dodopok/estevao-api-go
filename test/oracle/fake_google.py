@@ -15,8 +15,14 @@ Perplexity (POST /perplexity/chat/completions, bearer "px-test-key") answers
 one bullet per prayer request of the prompt, unless the first request's
 title is one of the PX-* switches below. GET /__perplexity lists the request
 bodies received (so the prompts of both stacks are compared); DELETE clears.
+
+Strapi (POST /strapi/api/internal/rosary-prayers/{upsert-approved,unpublish},
+bearer "strapi-internal-test") publishes as documentId "doc-<prayer id>"
+unless the prayer name or document id is one of the STRAPI-* / doc-* switches.
+GET /__strapi lists the requests; DELETE clears.
 """
 import json
+import re
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -24,6 +30,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 deleted = []
 revenuecat_calls = []
 perplexity_bodies = []
+strapi_requests = []
 lock = threading.Lock()
 
 
@@ -96,6 +103,12 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/__perplexity":
             with lock:
                 return self.reply(200, list(perplexity_bodies))
+        if self.path == "/__strapi":
+            # Sorted: the calls come from background jobs, whose relative order
+            # is not part of the contract (Solid Queue workers run them
+            # concurrently too).
+            with lock:
+                return self.reply(200, sorted(strapi_requests))
         prefix = "/revenuecat/v1/subscribers/"
         if self.path.startswith(prefix):
             if self.headers.get("Authorization") != "Bearer rc-test-key":
@@ -122,11 +135,29 @@ class Handler(BaseHTTPRequestHandler):
             with lock:
                 perplexity_bodies.clear()
             return self.reply(200, {})
+        if self.path == "/__strapi":
+            with lock:
+                strapi_requests.clear()
+            return self.reply(200, {})
         self.reply(404, {})
 
     def do_POST(self):
         n = int(self.headers.get("Content-Length") or 0)
         data = self.rfile.read(n) if n else b""
+        if self.path.startswith("/strapi/api/internal/rosary-prayers/"):
+            if self.headers.get("Authorization") != "Bearer strapi-internal-test":
+                return self.reply(401, {"error": "unauthorized"})
+            payload = json.loads(data)
+            recorded = data.decode()
+            revision = (payload.get("prayer") or {}).get("source_revision") if isinstance(payload, dict) else None
+            if isinstance(revision, str) and re.match(r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{6}Z$", revision):
+                recorded = recorded.replace(revision, "<updated_at>")  # a row timestamp, volatile
+            with lock:
+                strapi_requests.append(self.path + " " + recorded)
+            status, body = strapi_reply(self.path, payload)
+            if isinstance(body, str):
+                return self.reply_raw(status, body)
+            return self.reply(status, body)
         if self.path == "/perplexity/chat/completions":
             if self.headers.get("Authorization") != "Bearer px-test-key":
                 return self.reply(401, {"error": "unauthorized"})
@@ -187,6 +218,29 @@ def perplexity_reply(payload):
             text += " \u2014 " + it["content"]
         lines.append("\u2022  " + " ".join(text.split()[:10]))
     return chat("\n\n".join(lines) + "\n")
+
+
+def strapi_reply(path, payload):
+    if path.endswith("/upsert-approved"):
+        prayer = payload.get("prayer") or {}
+        name = prayer.get("name") or ""
+        if name.startswith("STRAPI-500"):
+            return 500, {"error": "boom"}
+        if name.startswith("STRAPI-422"):
+            return 422, {"error": "invalid"}
+        if name.startswith("STRAPI-nodoc"):
+            return 200, {"data": {}}
+        if name.startswith("STRAPI-badjson"):
+            return 200, "not json"
+        return 200, {"data": {"documentId": "doc-%s" % prayer.get("source_api_prayer_id")}}
+    doc = payload.get("document_id") or ""
+    if doc == "doc-missing":
+        return 404, {"error": "not found"}
+    if doc == "doc-400":
+        return 400, {"error": "bad"}
+    if doc == "doc-500":
+        return 500, {"error": "boom"}
+    return 200, {"found": True, "documentId": doc}
 
 
 if __name__ == "__main__":

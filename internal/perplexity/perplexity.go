@@ -129,10 +129,10 @@ func userPrompt(requests []Request, language string) string {
 			b.WriteByte(',')
 		}
 		fmt.Fprintf(&b, `{"id":%d,"title":`, i+1)
-		writeJSONString(&b, r.Title)
+		rb.JSONGenerateString(&b, r.Title)
 		b.WriteString(`,"content":`)
 		if r.Content != nil && !rb.BlankString(*r.Content) {
-			writeJSONString(&b, *r.Content)
+			rb.JSONGenerateString(&b, *r.Content)
 		} else {
 			b.WriteString("null")
 		}
@@ -141,37 +141,6 @@ func userPrompt(requests []Request, language string) string {
 	b.WriteByte(']')
 	items := strings.NewReplacer("<", `\u003C`, ">", `\u003E`).Replace(b.String())
 	return header + "\n<prayer_request_data>\n" + items + "\n</prayer_request_data>"
-}
-
-// writeJSONString is Ruby's JSON.generate for a String: only quotes,
-// backslashes and C0 controls are escaped.
-func writeJSONString(b *strings.Builder, s string) {
-	b.WriteByte('"')
-	for _, r := range s {
-		switch r {
-		case '"':
-			b.WriteString(`\"`)
-		case '\\':
-			b.WriteString(`\\`)
-		case '\n':
-			b.WriteString(`\n`)
-		case '\r':
-			b.WriteString(`\r`)
-		case '\t':
-			b.WriteString(`\t`)
-		case '\b':
-			b.WriteString(`\b`)
-		case '\f':
-			b.WriteString(`\f`)
-		default:
-			if r < 0x20 {
-				fmt.Fprintf(b, `\u%04x`, r)
-			} else {
-				b.WriteRune(r)
-			}
-		}
-	}
-	b.WriteByte('"')
 }
 
 // parseSuccess ports parse_success_response.
