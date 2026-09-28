@@ -520,8 +520,12 @@ func operationPayload(o *Operation, job *queueJob, failure *string, hasFailure, 
 		progress = math.Min(rb.RoundFloat(float64(o.ProcessedItems)/float64(o.TotalItems)*100, 2), 100.0)
 	}
 	var errMsg any = rb.Deref(o.ErrorMessage)
-	if hasFailure && failure != nil {
-		errMsg = *failure
+	if hasFailure {
+		// FailedExecution#error is the JSON coder's value: the parsed hash.
+		errMsg = nil
+		if failure != nil {
+			errMsg = jsonValue([]byte(*failure))
+		}
 	}
 	return rb.M("id", o.ID, "kind", o.Kind, "status", status, "active_job_id", rb.Deref(o.ActiveJobID),
 		"prayer_book_code", rb.Deref(o.PrayerBookCode), "parameters", jsonValue(o.Parameters),

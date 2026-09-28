@@ -6,6 +6,23 @@ import "github.com/dodopok/estevao-api-go/internal/web"
 // descendants (filled in as controllers are ported).
 func Endpoints() map[string]web.HandlerFunc {
 	return map[string]web.HandlerFunc{
+		"api/v1/admin/audio#generation_status":       AdminAudioGenerationStatus,
+		"api/v1/admin/audio#summary":                 AdminAudioSummary,
+		"api/v1/admin/audio#clips":                   AdminAudioClips,
+		"api/v1/admin/audio#clip":                    AdminAudioClip,
+		"api/v1/admin/audio#clip_url":                AdminAudioClipURL,
+		"api/v1/admin/audio#regenerate":              AdminAudioRegenerate,
+		"api/v1/admin/audio#accept_candidate":        AdminAudioAcceptCandidate,
+		"api/v1/admin/audio#reject_candidate":        AdminAudioRejectCandidate,
+		"api/v1/admin/audio#operations":              AdminAudioOperations,
+		"api/v1/admin/audio#operation":               AdminAudioOperation,
+		"api/v1/admin/audio#generate":                AdminAudioGenerate,
+		"api/v1/admin/audio#cleanup_preview":         AdminAudioCleanupPreview,
+		"api/v1/admin/audio#cleanup":                 AdminAudioCleanup,
+		"api/v1/admin/audio#generate_catalog":        AdminAudioGenerateCatalog,
+		"api/v1/admin/audio#reindex_catalog":         AdminAudioReindexCatalog,
+		"api/v1/admin/audio#worker_queue":            AdminAudioWorkerQueue,
+		"api/v1/admin/audio#purge_worker_queue":      AdminAudioPurgeWorkerQueue,
 		"api/v1/calendar#today":                      CalendarToday,
 		"api/v1/calendar#day":                        CalendarDay,
 		"api/v1/lectionary#day":                      LectionaryDay,
