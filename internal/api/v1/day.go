@@ -1,6 +1,9 @@
 package v1
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/books"
@@ -10,6 +13,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/prefs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/reading"
+	"github.com/dodopok/estevao-api-go/internal/rediscache"
 	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
@@ -21,13 +25,51 @@ func today() civil.Date {
 
 // CalendarToday ports CalendarController#today.
 var CalendarToday = withCalendar(func(c *web.Context, r *resolver) {
-	c.JSON(200, dayPayload(c, r, today()))
+	dayResponse(c, r, today(), "today")
 })
 
 // CalendarDay ports CalendarController#day.
 var CalendarDay = withCalendar(func(c *web.Context, r *resolver) {
-	c.JSON(200, dayPayload(c, r, parseDate(c)))
+	dayResponse(c, r, parseDate(c), "day")
 })
+
+// dayResponse ports day_response(date, scope:): the payload cached for a
+// day under the same key parts and TTL as the Rails controller
+// (Cacheable::TTL::READINGS), versioned by the Prayer Book's updated_at, so
+// both stacks recompute on the same changes.
+func dayResponse(c *web.Context, r *resolver, date civil.Date, scope string) {
+	values := r.resolvedPreferences().Values
+	readingType := "semicontinuous"
+	if v := values.Get("reading_type"); v != nil {
+		readingType = rb.ToS(v)
+	}
+	variant := r.lectionaryVariant()
+	if variant == "" {
+		variant = "default"
+	}
+	style := liturgical.RulesFor(r.code()).CalendarCollectLanguageStyle(rb.ToS(values.Get("daily_office_rite")))
+	if style == "" {
+		style = "default"
+	}
+	pb := r.book()
+	key := strings.Join([]string{"calendar", scope, "v6", date.ISO(), "reading_" + readingType,
+		"bible_" + rb.ToS(values.Get("bible_version")), "lectionary_" + variant, "psalm_" + calendarPsalmPreferencesKey(values),
+		"collect_" + style, r.code(), pb.Language, "pb_" + timestampVersion(&pb.UpdatedAt)}, "/")
+	body := rediscache.FetchJSON(c.Ctx, key, 24*time.Hour, func() []byte { return rb.JSON(dayPayload(c, r, date)) })
+	c.Raw(200, "application/json; charset=utf-8", body)
+}
+
+// calendarPsalmPreferencesKey ports calendar_psalm_preferences_key.
+func calendarPsalmPreferencesKey(values *rb.Map) string {
+	relevant := rb.NewMap()
+	for _, k := range []string{"evening_psalm_cycle", "lectionary_variant", "morning_psalm_cycle", "psalm_cycle", "psalm_translation"} {
+		if values.Has(k) {
+			relevant.Set(k, values.Get(k))
+		}
+	}
+	sum := sha256.Sum256(rb.JSON(relevant))
+	return hex.EncodeToString(sum[:])[:16]
+}
 
 func dayPayload(c *web.Context, r *resolver, date civil.Date) *rb.Map {
 	pb := r.book()

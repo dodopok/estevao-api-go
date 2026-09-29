@@ -223,6 +223,10 @@ func init() {
 			return s
 		}
 		get := func(path string, h map[string]string) diff.Request {
+			if path == "/api/v1/users/me/onboarding" {
+				// the scenarios write the onboarding: its timestamps are the clock's
+				return diff.Request{Path: path, Headers: h, Volatile: []string{"completed_at", "created_at", "updated_at"}}
+			}
 			return diff.Request{Path: path, Headers: h}
 		}
 

@@ -1,6 +1,7 @@
 package suites
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/dodopok/estevao-api-go/test/diff"
@@ -26,6 +27,8 @@ INSERT INTO shared_offices (id, user_id, short_code, prayer_book_code, office_ty
  (990002, NULL, 'DTUCOLD', 'loc_2015', 'evening', '2026-03-02', 12, '{}', '2020-01-01', now(), now());
 `
 
+var journalMonth = regexp.MustCompile(`^/api/v1/journals/\d+/\d+$`)
+
 func init() {
 	registerScenarios("user_content", func() []diff.Scenario {
 		plain := userHeaders("difftest-us-plain", "us-plain@example.com")
@@ -40,7 +43,9 @@ func init() {
 		get := func(path string, h map[string]string) diff.Request { return diff.Request{Path: path, Headers: h} }
 		created := []string{"created_at", "updated_at"}
 		getV := func(path string, h map[string]string) diff.Request {
-			return diff.Request{Path: path, Headers: h, Volatile: created}
+			// A journal month groups rows read without ORDER BY: heap order,
+			// which changes between runs in Rails too (docs/EQUIVALENCE.md D2).
+			return diff.Request{Path: path, Headers: h, Volatile: created, AnyKeyOrder: journalMonth.MatchString(path)}
 		}
 		return []diff.Scenario{
 			sc("completions", []string{
@@ -82,17 +87,15 @@ func init() {
 				jsonReq("PATCH", "/api/v1/journals/990004", plain, `{"journal":{"content":"x"}}`),
 				jsonReq("PATCH", "/api/v1/journals/abc", plain, `{"journal":{"content":"x"}}`),
 				getV("/api/v1/journals/2026/3/2", plain),
-				get("/api/v1/journals/2026/3", plain),
-				// entries grouped from rows read without ORDER BY: heap order,
-				// which changes between runs in Rails too (docs/EQUIVALENCE.md D2)
-				func() diff.Request { r := getV("/api/v1/journals/2026/9", plain); r.AnyKeyOrder = true; return r }(),
+				getV("/api/v1/journals/2026/3", plain),
+				getV("/api/v1/journals/2026/9", plain),
 				get("/api/v1/journals/2026/2/30", plain),
 				get("/api/v1/journals/2026/13", plain),
 				get("/api/v1/journals/1800/1", plain),
 				diff.Request{Method: "DELETE", Path: "/api/v1/journals/990003", Headers: plain},
 				diff.Request{Method: "DELETE", Path: "/api/v1/journals/990003", Headers: plain},
 				diff.Request{Method: "DELETE", Path: "/api/v1/journals/990004", Headers: plain},
-				get("/api/v1/journals/2026/3", plain),
+				getV("/api/v1/journals/2026/3", plain),
 			),
 			sc("favorites", []string{
 				`SELECT user_id, post_slug, kind, name, updated_at > '2026-06-01' FROM user_favorites WHERE user_id BETWEEN 990001 AND 990099 ORDER BY post_slug`},

@@ -20,9 +20,10 @@ import (
 
 // The warmers run the same domain steps as Rails' CacheWarmerJob and
 // CalendarWarmerJob, so a book whose data no longer computes still fails the
-// job the same way. What they fill is this process' own caches: the Go web
-// tier computes these payloads per request and keeps no shared cache of them
-// (see docs/EQUIVALENCE.md).
+// job the same way. The Daily Office base they build lands in the Go
+// stack's own cache (same key and version as the Rails entry, JSON under
+// "go/"); the rest only fills this process' in-memory caches (see
+// docs/EQUIVALENCE.md).
 func init() {
 	solidqueue.Register("CacheWarmerJob", solidqueue.Handler{Queue: "maintenance", Perform: cacheWarmer})
 	solidqueue.Register("CalendarWarmerJob", solidqueue.Handler{Queue: "maintenance", Perform: calendarWarmer})

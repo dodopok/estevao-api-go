@@ -2,13 +2,17 @@ package dailyoffice
 
 import (
 	"context"
+	"fmt"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/prefs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
+	"github.com/dodopok/estevao-api-go/internal/rediscache"
 	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
@@ -122,8 +126,11 @@ func (s *Service) Call(ctx context.Context) *rb.Map {
 	return RemoveAudioData(s.Base(ctx)).(*rb.Map)
 }
 
-// Base ports fetch_base_office (computed; Rails caches it per preferences
-// and Prayer Book version): the office before personalization.
+// Base ports fetch_base_office: the office before personalization, cached
+// under DailyOfficeService.base_cache_key (Cacheable::TTL::DAILY_OFFICE) and
+// versioned by the Prayer Book's updated_at, as Rails caches it. Office
+// support is validated only when the office is built (a cache miss), as in
+// Rails; unsupported offices are never cached.
 func (s *Service) Base(ctx context.Context) *rb.Map {
 	code := rb.ToS(s.Prefs.Get("prayer_book_code"))
 	build := fetchBuilder(code)
@@ -134,19 +141,57 @@ func (s *Service) Base(ctx context.Context) *rb.Map {
 	if pb == nil {
 		web.RecordNotFound("Couldn't find PrayerBook with code=" + code)
 	}
+	key := "daily_office/base/v3/" + s.Date.ISO() + "/" + s.OfficeType + "/" + s.preferencesHash(ctx, pb) +
+		"/pb_" + timestampVersion(pb.UpdatedAt)
+	raw := rediscache.FetchJSON(ctx, key, 24*time.Hour, func() []byte {
+		s.validateOfficeSupport(pb)
+		return rb.JSON(build(ctx, NewContext(ctx, s.Date, s.OfficeType, s.Prefs)).Call())
+	})
+	office, err := rb.ParseJSON(raw)
+	if err != nil {
+		panic(err)
+	}
+	return office.(*rb.Map)
+}
+
+func (s *Service) validateOfficeSupport(pb *store.PrayerBook) {
 	family := s.Prefs.Get("family_rite") == true
-	available := books.For(pb.Code, pb.Features).AvailableOffices(family)
-	supported := false
-	for _, o := range available {
+	for _, o := range books.For(pb.Code, pb.Features).AvailableOffices(family) {
 		if o == s.OfficeType {
-			supported = true
+			return
 		}
 	}
-	if !supported {
-		web.Raise("UnsupportedOfficeType", "O ofício '"+s.OfficeType+"' não está disponível para o Prayer Book "+code+".", "")
+	web.Raise("UnsupportedOfficeType", "O ofício '"+s.OfficeType+"' não está disponível para o Prayer Book "+pb.Code+".", "")
+}
+
+// preferencesHash ports DailyOfficeService.build_preferences_hash: the
+// defaults merged under the preferences, projected on the book's declared
+// preference keys (all keys when it declares none).
+func (s *Service) preferencesHash(ctx context.Context, pb *store.PrayerBook) string {
+	full := rb.M("prayer_book_code", books.DefaultCode, "bible_version", "nvi", "family_rite", false)
+	s.Prefs.Each(func(k string, v any) { full.Set(k, v) })
+	var keys []string
+	if defs, err := prefs.For(ctx, pb); err == nil {
+		keys = defs.Keys()
+	} else {
+		panic(err)
 	}
-	c := NewContext(ctx, s.Date, s.OfficeType, s.Prefs)
-	return build(ctx, c).Call()
+	if len(keys) == 0 {
+		keys = full.Keys()
+	}
+	compact := rb.NewMap()
+	full.Each(func(k string, v any) {
+		if v != nil {
+			compact.Set(k, v)
+		}
+	})
+	return (&prefs.Resolved{Values: compact, CacheKeys: keys}).CacheKey()
+}
+
+// timestampVersion ports Cacheable.timestamp_version.
+func timestampVersion(t time.Time) string {
+	u := t.UTC()
+	return strings.TrimLeft(u.Format("20060102150405")+fmt.Sprintf("%06d", u.Nanosecond()/1000), "0")
 }
 
 // RemoveAudioData ports remove_audio_data!.

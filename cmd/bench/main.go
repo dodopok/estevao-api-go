@@ -21,6 +21,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -142,6 +143,7 @@ func main() {
 	duration := flag.Duration("d", 10*time.Second, "measurement per endpoint and server")
 	railsRedis := flag.String("rails-redis", "redis://localhost:6379/1", "Rails cache (flushed for the cold pass)")
 	goRedis := flag.String("go-redis", "redis://localhost:6379/2", "Go cache (flushed for the cold pass)")
+	only := flag.String("only", "", "measure only endpoints whose name contains this text (skips the cold pass)")
 	flag.Parse()
 	servers := []struct{ name, url string }{{"rails", *railsURL}, {"go", *goURL}}
 
@@ -149,6 +151,9 @@ func main() {
 	fmt.Println("| Endpoint | Server | req/s | p50 ms | p95 ms | p99 ms | errors |")
 	fmt.Println("|---|---|---:|---:|---:|---:|---:|")
 	for i, e := range endpoints {
+		if *only != "" && !strings.Contains(e.name, *only) {
+			continue
+		}
 		var hashes [][32]byte
 		ok := true
 		for _, s := range servers {
@@ -183,6 +188,9 @@ func main() {
 		}
 	}
 
+	if *only != "" {
+		return
+	}
 	fmt.Printf("\n## Cold (uncached) latency: caches flushed, 20 distinct dates per endpoint, one request at a time\n\n")
 	fmt.Println("| Endpoint | Server | mean ms | p50 ms | max ms |")
 	fmt.Println("|---|---|---:|---:|---:|")
