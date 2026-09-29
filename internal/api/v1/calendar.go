@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/calgrid"
 	"github.com/dodopok/estevao-api-go/internal/civil"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -75,95 +76,55 @@ func newCalendar(c *web.Context, year int, pb *store.PrayerBook) *liturgical.Cal
 	return liturgical.NewCalendarWith(year, pb.Code, celebrationsOf(c, pb))
 }
 
-// compactDay ports Calendar::CompactDayPayload#call.
-func compactDay(info *rb.Map, fast *liturgical.FastObservance, language string) *rb.Map {
-	dmy := rb.ToS(info.Get("date"))
-	date := dmy[6:10] + "-" + dmy[3:5] + "-" + dmy[0:2]
-	var celebrationName any
-	if cel, ok := info.Get("celebration").(*rb.Map); ok {
-		celebrationName = cel.Get("name")
-	}
-	var weekName any
-	if sn := info.Get("sunday_name"); sn != nil {
-		s := rb.ToS(sn)
-		weekName = *liturgical.TranslateSundayName(&s, language)
-	} else {
-		var descs []string
-		for _, d := range info.Get("description").([]any) {
-			descs = append(descs, rb.ToS(d))
-		}
-		week := ""
-		for _, d := range descs {
-			if strings.Contains(d, "Semana após") {
-				week = d
-				break
-			}
-		}
-		if week == "" {
-			for _, d := range descs {
-				if strings.Contains(d, "Semana") || strings.Contains(d, "Oitava") {
-					week = d
-					break
-				}
-			}
-		}
-		if week != "" {
-			weekName = liturgical.TranslateDescription(week, language)
-		}
-	}
-	return rb.M(
-		"date", date,
-		"color", info.Get("color"),
-		"season_post_slug", info.Get("season_post_slug"),
-		"book_season_post_slug", info.Get("book_season_post_slug"),
-		"fast_day", info.Get("fast_day"),
-		"fast_observance", liturgical.PresentFastObservance(fast, language),
-		"celebration_name", celebrationName,
-		"week_name", weekName,
-	)
-}
-
-func compactDays(c *web.Context, pb *store.PrayerBook, year int, months []int) []any {
-	cal := newCalendar(c, year, pb)
-	out := []any{}
-	for _, m := range months {
-		for d := 1; d <= civil.DaysInMonth(year, m); d++ {
-			date := civil.MustNew(year, m, d)
-			out = append(out, compactDay(cal.DayInfo(date), cal.ContextFor(date).FastObservance, pb.Language))
-		}
-	}
-	return out
-}
-
 // CalendarMonth ports CalendarController#month.
 var CalendarMonth = withCalendar(func(c *web.Context, r *resolver) {
 	year, month := rb.ToI(c.Param("year")), rb.ToI(c.Param("month"))
 	validateYearMonth(year, month)
-	c.JSON(200, compactDays(c, r.book(), year, []int{month}))
+	c.Raw(200, "application/json; charset=utf-8", r.grid(c).Month(year, month, nil))
 })
 
 // CalendarYear ports CalendarController#year.
 var CalendarYear = withCalendar(func(c *web.Context, r *resolver) {
 	year := rb.ToI(c.Param("year"))
 	validateYear(year)
-	c.JSON(200, compactDays(c, r.book(), year, []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}))
+	c.Raw(200, "application/json; charset=utf-8", r.grid(c).Year(year))
 })
 
-func overview(c *web.Context, r *resolver) *liturgical.YearOverview {
+// grid ports CalendarController#grid_cache.
+func (r *resolver) grid(c *web.Context) *calgrid.Grid {
+	if r.gridCache == nil {
+		r.gridCache = calgrid.New(c.Ctx, r.book())
+	}
+	return r.gridCache
+}
+
+// yearOverview ports #year_overview: validates the year, then caches and
+// renders one key of the overview.
+func yearOverview(c *web.Context, r *resolver, scope string, key func(*liturgical.YearOverview) any) {
 	year := rb.ToI(c.Param("year"))
 	validateYear(year)
-	pb := r.book()
+	g := r.grid(c)
+	c.Raw(200, "application/json; charset=utf-8", g.Fetch(func() any { return key(overviewService(c, g.Book(), year)) }, scope, year))
+}
+
+func overviewService(c *web.Context, pb *store.PrayerBook, year int) *liturgical.YearOverview {
 	return liturgical.NewYearOverview(year, pb.Code, celebrationsOf(c, pb), true)
 }
 
 // CalendarOverview ports #overview.
-var CalendarOverview = withCalendar(func(c *web.Context, r *resolver) { c.JSON(200, overview(c, r).Call()) })
+var CalendarOverview = withCalendar(func(c *web.Context, r *resolver) {
+	yearOverview(c, r, "overview", func(o *liturgical.YearOverview) any { return o.Call() })
+})
 
 // CalendarYearSeasons ports #year_seasons.
-var CalendarYearSeasons = withCalendar(func(c *web.Context, r *resolver) { c.JSON(200, overview(c, r).Seasons()) })
+var CalendarYearSeasons = withCalendar(func(c *web.Context, r *resolver) {
+	yearOverview(c, r, "seasons", func(o *liturgical.YearOverview) any { return o.Seasons() })
+})
 
 // CalendarYearKeyDates ports #year_key_dates.
-var CalendarYearKeyDates = withCalendar(func(c *web.Context, r *resolver) { c.JSON(200, overview(c, r).KeyDates()) })
+var CalendarYearKeyDates = withCalendar(func(c *web.Context, r *resolver) {
+	yearOverview(c, r, "key_dates", func(o *liturgical.YearOverview) any { return o.KeyDates() })
+})
 
 // CalendarYearCelebrations ports #year_celebrations.
 var CalendarYearCelebrations = withCalendar(func(c *web.Context, r *resolver) {
@@ -183,6 +144,12 @@ var CalendarYearCelebrations = withCalendar(func(c *web.Context, r *resolver) {
 		}
 	}
 	grouped := c.Param("grouped") == "true"
-	pb := r.book()
-	c.JSON(200, liturgical.NewYearOverview(year, pb.Code, celebrationsOf(c, pb), true).Celebrations(typ, grouped))
+	filter := typ
+	if filter == "" {
+		filter = "all"
+	}
+	g := r.grid(c)
+	c.Raw(200, "application/json; charset=utf-8", g.Fetch(func() any {
+		return overviewService(c, g.Book(), year).Celebrations(typ, grouped)
+	}, "celebrations", year, filter, grouped))
 })

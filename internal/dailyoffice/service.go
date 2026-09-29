@@ -2,9 +2,7 @@ package dailyoffice
 
 import (
 	"context"
-	"fmt"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/books"
@@ -142,7 +140,7 @@ func (s *Service) Base(ctx context.Context) *rb.Map {
 		web.RecordNotFound("Couldn't find PrayerBook with code=" + code)
 	}
 	key := "daily_office/base/v3/" + s.Date.ISO() + "/" + s.OfficeType + "/" + s.preferencesHash(ctx, pb) +
-		"/pb_" + timestampVersion(pb.UpdatedAt)
+		"/pb_" + rediscache.TimestampVersion(&pb.UpdatedAt)
 	raw := rediscache.FetchJSON(ctx, key, 24*time.Hour, func() []byte {
 		s.validateOfficeSupport(pb)
 		return rb.JSON(build(ctx, NewContext(ctx, s.Date, s.OfficeType, s.Prefs)).Call())
@@ -186,12 +184,6 @@ func (s *Service) preferencesHash(ctx context.Context, pb *store.PrayerBook) str
 		}
 	})
 	return (&prefs.Resolved{Values: compact, CacheKeys: keys}).CacheKey()
-}
-
-// timestampVersion ports Cacheable.timestamp_version.
-func timestampVersion(t time.Time) string {
-	u := t.UTC()
-	return strings.TrimLeft(u.Format("20060102150405")+fmt.Sprintf("%06d", u.Nanosecond()/1000), "0")
 }
 
 // RemoveAudioData ports remove_audio_data!.

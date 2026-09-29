@@ -1,13 +1,18 @@
 package v1
 
 import (
+	"bytes"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/civil"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/reading"
+	"github.com/dodopok/estevao-api-go/internal/rediscache"
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
 
@@ -76,11 +81,15 @@ func serializeServiceReadings(s *reading.Selection) any {
 // LectionaryDay ports LectionaryController#day.
 var LectionaryDay = withFilters("lectionary", func(c *web.Context, r *resolver) {
 	date := parseDate(c)
+	cachedLectionary(c, r, "day", date, func() (int, any) { return lectionaryDayResponse(c, r, date) })
+})
+
+func lectionaryDayResponse(c *web.Context, r *resolver, date civil.Date) (int, any) {
 	cal := liturgical.NewCalendar(date.Year(), r.prayerBookCodeOrDefault())
 	res := r.lectionaryResolver(c, date, cal, "")
 	sel := res.Selection()
 	if sel != nil && sel.FirstReading != nil {
-		c.JSON(200, rb.M(
+		return 200, rb.M(
 			"data", date.ISO(),
 			"dia_da_semana", liturgical.DayNamesPT[date.Weekday()],
 			"ciclo", res.Cycle,
@@ -90,19 +99,22 @@ var LectionaryDay = withFilters("lectionary", func(c *web.Context, r *resolver) 
 				"segunda_leitura", serializeReading(sel.SecondReading),
 				"evangelho", serializeReading(sel.Gospel),
 			),
-		))
-		return
+		)
 	}
-	c.JSON(404, rb.M(
+	return 404, rb.M(
 		"data", date.ISO(),
 		"ciclo", res.Cycle,
 		"mensagem", "Leituras não encontradas para esta data. Por favor, adicione-as ao banco de dados.",
-	))
-})
+	)
+}
 
 // LectionaryAllServices ports LectionaryController#all_services.
 var LectionaryAllServices = withFilters("lectionary", func(c *web.Context, r *resolver) {
 	date := parseDate(c)
+	cachedLectionary(c, r, "all_services", date, func() (int, any) { return 200, lectionaryAllServicesResponse(c, r, date) })
+})
+
+func lectionaryAllServicesResponse(c *web.Context, r *resolver, date civil.Date) any {
 	cal := liturgical.NewCalendar(date.Year(), r.prayerBookCodeOrDefault())
 	cycle := ""
 	out := map[string]any{}
@@ -119,15 +131,35 @@ var LectionaryAllServices = withFilters("lectionary", func(c *web.Context, r *re
 	if cycle != "" {
 		cycleVal = cycle
 	}
-	c.JSON(200, rb.M(
+	return rb.M(
 		"data", date.ISO(),
 		"dia_da_semana", liturgical.DayNamesPT[date.Weekday()],
 		"ciclo", cycleVal,
 		"santa_eucaristia", out["santa_eucaristia"],
 		"oracao_matutina", out["oracao_matutina"],
 		"oracao_vespertina", out["oracao_vespertina"],
-	))
-})
+	)
+}
+
+// cachedLectionary renders the response build computes, cached for a day
+// under LectionaryController#lectionary_readings_cache_key. The status is
+// cached with the body, as Rails caches {status:, body:} for #day.
+func cachedLectionary(c *web.Context, r *resolver, endpoint string, date civil.Date, build func() (int, any)) {
+	code := r.prayerBookCodeOrDefault()
+	variant := r.lectionaryVariant()
+	if variant == "" {
+		variant = "default"
+	}
+	key := strings.Join([]string{"lectionary", endpoint, "v1", date.ISO(), code, r.bibleVersionOrNVI(), r.readingType(), variant,
+		"pb_" + rediscache.TimestampVersion(&r.prayerBook(code, true).UpdatedAt)}, "/")
+	entry := rediscache.FetchJSON(c.Ctx, key, 24*time.Hour, func() []byte {
+		status, body := build()
+		return append([]byte(strconv.Itoa(status)+"\n"), rb.JSON(body)...)
+	})
+	head, body, _ := bytes.Cut(entry, []byte("\n"))
+	status, _ := strconv.Atoi(string(head))
+	c.Raw(status, "application/json; charset=utf-8", body)
+}
 
 // LectionaryCycleInfo ports LectionaryController#cycle_info.
 var LectionaryCycleInfo = withFilters("lectionary", func(c *web.Context, r *resolver) {

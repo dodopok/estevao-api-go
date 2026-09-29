@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/books"
+	"github.com/dodopok/estevao-api-go/internal/calgrid"
 	"github.com/dodopok/estevao-api-go/internal/civil"
 	"github.com/dodopok/estevao-api-go/internal/dailyoffice"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
@@ -20,10 +21,10 @@ import (
 
 // The warmers run the same domain steps as Rails' CacheWarmerJob and
 // CalendarWarmerJob, so a book whose data no longer computes still fails the
-// job the same way. The Daily Office base they build lands in the Go
-// stack's own cache (same key and version as the Rails entry, JSON under
-// "go/"); the rest only fills this process' in-memory caches (see
-// docs/EQUIVALENCE.md).
+// job the same way. The Daily Office base and the calendar months they build
+// land in the Go stack's own cache (same key and version scheme as the Rails
+// entry, JSON under "go/"); the rest only fills this process' in-memory
+// caches (see docs/EQUIVALENCE.md).
 func init() {
 	solidqueue.Register("CacheWarmerJob", solidqueue.Handler{Queue: "maintenance", Perform: cacheWarmer})
 	solidqueue.Register("CalendarWarmerJob", solidqueue.Handler{Queue: "maintenance", Perform: calendarWarmer})
@@ -232,7 +233,7 @@ func calendarWarmer(ctx context.Context, e *solidqueue.Execution) error {
 	}
 	today := civil.FromTime(time.Now().In(rb.AppZone))
 	first := civil.MustNew(today.Year(), today.Month(), 1)
-	warmed, failures := 0, 0
+	warmed, already, failures := 0, 0, 0
 	for _, pb := range pbs {
 		err := func() (err error) {
 			defer func() {
@@ -240,25 +241,28 @@ func calendarWarmer(ctx context.Context, e *solidqueue.Execution) error {
 					err = fmt.Errorf("%v", rec)
 				}
 			}()
-			bc, err := store.CelebrationsForBook(ctx, pb)
-			if err != nil {
-				return err
-			}
+			grid := calgrid.New(ctx, pb)
+			var bc *liturgical.BookCelebrations
 			cals := map[int]*liturgical.Calendar{}
 			for off := -back; off <= ahead; off++ {
 				m := first.Month() - 1 + off
 				y := first.Year() + floorDiv(m, 12)
 				m = m - floorDiv(m, 12)*12 + 1
+				if grid.MonthCached(y, m) {
+					already++
+					continue
+				}
 				cal, ok := cals[y]
 				if !ok {
+					if bc == nil {
+						if bc, err = store.CelebrationsForBook(ctx, pb); err != nil {
+							return err
+						}
+					}
 					cal = liturgical.NewCalendarWith(y, pb.Code, bc)
 					cals[y] = cal
 				}
-				for d := 1; d <= civil.DaysInMonth(y, m); d++ {
-					date := civil.MustNew(y, m, d)
-					cal.DayInfo(date)
-					cal.ContextFor(date)
-				}
+				grid.Month(y, m, cal)
 				warmed++
 			}
 			return nil
@@ -268,7 +272,7 @@ func calendarWarmer(ctx context.Context, e *solidqueue.Execution) error {
 			slog.Error("[CalendarWarmer] " + pb.Code + ": " + err.Error())
 		}
 	}
-	slog.Info(fmt.Sprintf("[CalendarWarmer] prayer_books=%d warmed=%d errors=%d", len(pbs), warmed, failures))
+	slog.Info(fmt.Sprintf("[CalendarWarmer] prayer_books=%d warmed=%d already_cached=%d errors=%d", len(pbs), warmed, already, failures))
 	return nil
 }
 

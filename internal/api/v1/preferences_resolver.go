@@ -3,6 +3,7 @@ package v1
 
 import (
 	"context"
+	"github.com/dodopok/estevao-api-go/internal/calgrid"
 	"github.com/dodopok/estevao-api-go/internal/civil"
 	"strings"
 
@@ -23,6 +24,7 @@ type resolver struct {
 	resolved    *prefs.Resolved
 	param       *rb.Map
 	shared      *sharedOffice
+	gridCache   *calgrid.Grid
 }
 
 func newResolver(c *web.Context) *resolver {

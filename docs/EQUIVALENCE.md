@@ -115,6 +115,8 @@ mesmas situações:
 |---|---|---|
 | Ofício base (`DailyOfficeService#fetch_base_office`) | `daily_office/base/v3/<data>/<ofício>/<hash das preferências declaradas>/pb_<updated_at do livro>` | 1 dia |
 | Dia do calendário (`calendar#day`, `#today`) | `calendar/<escopo>/v6/<data>/reading_…/bible_…/lectionary_…/psalm_…/collect_…/<livro>/<idioma>/pb_<versão>` | 1 dia |
+| Grade do calendário (`Calendar::GridCache`: mês, ano, visão geral, estações, datas-chave, celebrações do ano) | `calendar/<escopo>/<ano>[/…]/<livro>/<idioma>/cal_<digest das celebrações>`; o digest fica em `calendar_version/<livro>/pb_<updated_at>` (30 dias) | 1 ano |
+| Lecionário (`lectionary#day`, `#all_services`) | `lectionary/<endpoint>/v1/<data>/<livro>/<bíblia>/<tipo de leitura>/<variante>/pb_<updated_at>` (o `#day` guarda o status junto, como o Rails) | 1 dia |
 | Payloads da API v2 | chave do `Api::V2::BaseController#cached` | como no Rails |
 | Música de fundo, dashboard, resumo de áudio do admin, verificação de assinatura | mesmas chaves | como no Rails |
 | Multiplicadores de API key | chave própria do Go (desvio D8) | 5 min, como no Rails |
@@ -122,11 +124,14 @@ mesmas situações:
 Quando o Go **escreve** algo que o Rails mantém em cache sem versão, ele apaga
 a entrada do Rails como o próprio Rails faria (status de conclusão do ofício;
 autenticação e multiplicadores de API key) — ver [DATABASE.md](DATABASE.md).
-A grade do calendário (mês, ano, visão geral) o Rails guarda sob o digest das
-celebrações, então ela nunca fica velha; o Go a calcula por requisição, com o
-mesmo resultado. Os demais caches do Rails só economizam cálculo (lecionário,
-explicações, preferências por requisição, contexto do dia, resolvedor de
-leituras); o Go calcula esses por requisição — desvio D6.
+O digest da grade é calculado de forma diferente nos dois lados (o Rails sobre o
+JSON Ruby das linhas, o Go sobre o `to_jsonb` do PostgreSQL), mas cada um só lê
+as próprias entradas e os dois mudam nas mesmas edições. O `CalendarWarmerJob`
+do Go preenche exatamente as chaves de mês que as requisições do Go leem e pula
+os meses já em cache, como o Rails. Os demais caches do Rails só economizam
+cálculo (ciclo do lecionário, explicações, preferências por requisição, contexto
+do dia, resolvedor de leituras, atributos do `PrayerBook`); o Go calcula esses
+por requisição — desvio D6.
 
 ## 8. Desvios conhecidos
 
@@ -141,8 +146,8 @@ referência a este documento.
 | D3 | Backtrace de execuções falhas do Solid Queue | só diagnóstico | pilha Go em vez de Ruby; classe e mensagem iguais |
 | D4 | Textos de erros de transporte (timeout, conexão recusada) nos logs e em `error_message` de operações | só diagnóstico | mensagens do Go em vez das do Ruby; classe de erro e código iguais |
 | D5 | `Last-Modified` dos arquivos do Swagger UI | nenhum | é o mtime da instalação da gem; o Go usa o do momento da geração |
-| D6 | Caches do Rails que o Go não tem: lecionário (`lectionary#day` etc.), celebrações, livros e preferências no controller, feature flags (1 min), perfil e dados do usuário (5 min) | depois de uma edição de dados, o Rails pode servir o valor antigo até o TTL; o Go responde já atualizado | cálculo por requisição, custo medido em [PERFORMANCE.md](PERFORMANCE.md) |
-| D7 | Os warmers executam as mesmas etapas e falham igual; o que aquecem é o cache do lado que os executou | nenhum | caches separados por formato |
+| D6 | Caches do Rails que o Go não tem: ciclo do lecionário, celebrações, atributos do livro (`PrayerBook.find_by_code`) e preferências no controller, feature flags (1 min), perfil e dados do usuário (5 min) | depois de uma edição de dados, o Rails pode servir o valor antigo até o TTL; o Go responde já atualizado | cálculo por requisição, custo medido em [PERFORMANCE.md](PERFORMANCE.md) |
+| D7 | Os warmers executam as mesmas etapas e falham igual; o que aquecem (ofício base, meses do calendário) é o cache do lado que os executou | nenhum | caches separados por formato |
 | D8 | O cache (5 min) dos multiplicadores de API key fica no Redis em chave própria do Go (o Rails guarda o seu em Marshal) | durante a convivência, uma mudança de plano feita por um lado só limpa o cache daquele lado; o outro converge em até 5 min | formatos de cache incompatíveis entre Ruby e Go |
 | D9 | `DateZoneToDiff` (fusos por abreviação em `Date._parse`) cobre as abreviações de deslocamento fixo da `zonetab` | só entradas exóticas de data com nome de fuso | subconjunto usado pelos clientes |
 | D10 | País inferido do fuso depende do `tzdata` do sistema | nenhum se a imagem tiver `tzdata` (o Dockerfile instala) | o Go lê `/usr/share/zoneinfo` |

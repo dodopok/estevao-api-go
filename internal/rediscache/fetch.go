@@ -2,6 +2,7 @@ package rediscache
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -49,4 +50,23 @@ func DeleteRails(ctx context.Context, keys ...string) {
 		}
 		_ = Client.Del(ctx, Key(k)).Err()
 	}
+}
+
+// ExistsJSON reports whether a FetchJSON entry is present (Rails.cache.exist?).
+func ExistsJSON(ctx context.Context, key string) bool {
+	if Client == nil {
+		return false
+	}
+	n, err := Client.Exists(ctx, Key("go/"+key)).Result()
+	return err == nil && n > 0
+}
+
+// TimestampVersion ports Cacheable.timestamp_version: the UTC time to the
+// microsecond as digits, "0" for no time.
+func TimestampVersion(t *time.Time) string {
+	if t == nil {
+		return "0"
+	}
+	u := t.UTC()
+	return strings.TrimLeft(u.Format("20060102150405")+fmt.Sprintf("%06d", u.Nanosecond()/1000), "0")
 }

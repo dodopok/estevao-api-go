@@ -12,6 +12,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/langs"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/rb"
+	"github.com/dodopok/estevao-api-go/internal/rediscache"
 	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
@@ -26,13 +27,7 @@ func cacheKey(parts ...any) string {
 }
 
 // timestampVersion ports Cacheable.timestamp_version.
-func timestampVersion(t *time.Time) string {
-	if t == nil {
-		return "0"
-	}
-	u := t.UTC()
-	return strings.TrimLeft(u.Format("20060102150405")+fmt.Sprintf("%06d", u.Nanosecond()/1000), "0")
-}
+func timestampVersion(t *time.Time) string { return rediscache.TimestampVersion(t) }
 
 // iso8601 ports TimeWithZone#iso8601 in the application zone.
 func iso8601(t time.Time) string { return t.In(rb.AppZone).Format("2006-01-02T15:04:05Z07:00") }
