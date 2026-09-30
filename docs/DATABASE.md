@@ -102,7 +102,7 @@ Toda migração precisa funcionar com as duas versões do código (*expand/contr
 ## 3. O que nunca é feito
 
 * Nenhum `TRUNCATE`, `DELETE` em massa ou reconstrução de dados de referência. O
-  seeder Go (`estevao-seed load`) **recusa** qualquer banco em que uma das tabelas
+  seeder Go (`estevao seed load`) **recusa** qualquer banco em que uma das tabelas
   de referência já tenha linhas; ele só preenche bancos vazios.
 * Nenhum script aponta para um banco que não seja local: `bootstrap-db.sh` e os
   scripts de `tools/` verificam isso ou usam bancos temporários próprios.

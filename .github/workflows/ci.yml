@@ -65,6 +65,51 @@ jobs:
           PG_URL: postgres://postgres:postgres@localhost:5432
         run: tools/seed-verify.sh
 
+  corpus:
+    # Replays the recorded oracle corpus against the Go server (no Rails):
+    # test/corpus/replay.sh. The corpus holds copyrighted Bible texts, so it
+    # lives outside git: set the CORPUS_URL secret (a .tar.gz of the corpus
+    # directory; CORPUS_TOKEN is sent as a bearer token when set). Without
+    # it the job reports that it was skipped.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+    env:
+      CORPUS_URL: ${{ secrets.CORPUS_URL }}
+      CORPUS_TOKEN: ${{ secrets.CORPUS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: replay
+        env:
+          PGPASSWORD: postgres
+          PG_URL: postgres://postgres:postgres@localhost:5432
+        run: |
+          if [ -z "$CORPUS_URL" ]; then
+            echo "::notice::CORPUS_URL is not set: corpus replay skipped (docs/TESTING.md)"
+            exit 0
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-common redis-tools
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -qq postgresql-client-16
+          export PATH=/usr/lib/postgresql/16/bin:$PATH
+          mkdir -p "$RUNNER_TEMP/corpus"
+          auth=(); [ -n "$CORPUS_TOKEN" ] && auth=(-H "Authorization: Bearer $CORPUS_TOKEN" -H "Accept: application/octet-stream")
+          curl -fsSL "${auth[@]}" "$CORPUS_URL" | tar -xz -C "$RUNNER_TEMP/corpus" --strip-components=1
+          test/corpus/replay.sh "$RUNNER_TEMP/corpus"
+
   docker:
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +117,6 @@ jobs:
       - name: build image
         run: docker build -t estevao-api-go .
 
-# The differential suite (cmd/difftest) needs the Rails oracle, its database
-# and the fakes; it runs before a release with test/oracle/restart.sh
-# (docs/TESTING.md), not on every push.
+# The live differential suite (cmd/difftest against the Rails oracle) runs
+# where the oracle runs (test/oracle/restart.sh, docs/TESTING.md); the
+# corpus job above replays its recorded answers without Rails.

@@ -74,20 +74,20 @@ formato de agenda (Fugit) e as mesmas linhas em `solid_queue_recurring_tasks`.
 ## 5. Tarefas rake
 
 Nenhuma rake roda por agenda (`docs/deployment/scheduled_jobs.md` do Rails);
-todas são operação manual. Situação:
+todas são operação manual. As equivalentes estão na ferramenta `estevao`. A
+tabela completa, tarefa por tarefa, está em
+[OPERATIONS.md](OPERATIONS.md#6-tarefas-de-operação-as-rake-do-rails).
 
-| Tarefa | Situação |
-|---|---|
-| `db:seed` | portada: `estevao-seed load` + `seeds/` ([SEEDS.md](SEEDS.md)) |
-| `cache:warm_calendar` (deploy) | portada: `estevao-worker -warm-calendar` |
-| `cache:warm` | equivalente: enfileirar `CacheWarmerJob` (o worker Go executa) |
-| `db:prepare` / migrações | **continuam no Rails** — o schema é dono das migrações ([DATABASE.md](DATABASE.md)) |
-| `bible:*`, `psalters:seed`, `prayer_books:*`, `liturgical_texts:sync_catalog`, `import:collects` | continuam no Rails: importações e manutenção de dados de referência, rodadas contra o mesmo banco |
-| `audio:*`, `office_audio:*`, `background_music:*`, `storage:avatars:*`, `feature_flags:*`, `notifications:*`, `life_rules:translate` | continuam no Rails: operação editorial/manual; a geração de áudio pelo admin já roda no Go |
-| `benchmark:*`, `cache:stats/health/...`, `db:integrity:*`, `performance:analyze`, `redis:diagnostics`, `preferences:report`, `db:verify` | diagnósticos; substituídos por `cmd/bench`, `PPROF_ADDR` e consultas diretas |
+Resumo:
+* **Schema:** `db:*` virou `estevao db`, e o Go é dono das migrações.
+* **Seeds incrementais:** as várias tarefas por livro viraram
+  `estevao seed sync`.
+* **Bíblias:** os cinco importadores viraram um formato único de
+  export/import.
+* **Operação:** flags, caches, touch de livros e notificação de teste.
 
-O código Rails permanece no seu repositório e continua executável contra o
-banco compartilhado, então nenhuma dessas tarefas se perde no corte.
+Os diagnósticos foram substituídos por `cmd/bench`, `PPROF_ADDR` e o New
+Relic.
 
 ## 6. Integrações
 
@@ -101,7 +101,7 @@ banco compartilhado, então nenhuma dessas tarefas se perde no corte.
 | Strapi | publicação do rosário | `internal/rosary` | `custom_rosary` |
 | OpenAI TTS, Google Cloud TTS (Gemini), ElevenLabs | geração de áudio | `internal/audio/synthesize.go` | `audio_jobs` (os três provedores) |
 | S3 (Active Storage `railway_avatars`) | avatares, áudio, música | `internal/s3`, `internal/activestorage` | fake S3 em todas as suítes com arquivos |
-| New Relic (APM, erros, métricas custom) | observabilidade | **não portado** — o Go registra JSON em stdout; o gancho `web.Server.ReportError` existe para ligar um agente | — |
+| New Relic (APM, erros, métricas custom) | observabilidade | `internal/observe`: transações por rota e por job, erros com os parâmetros do Rails, segmentos do PostgreSQL, as métricas `Custom/*` dos painéis | `internal/observe` (testes com coletor inacessível) |
 
 ## 7. Caches
 
@@ -154,5 +154,5 @@ referência a este documento.
 | D11 | `User-Agent` das chamadas HTTP de saída | nenhum para os serviços usados | cliente HTTP diferente |
 | D12 | Mensagens de falha de autorização do Google (`Signet::AuthorizationError`) | só diagnóstico | biblioteca diferente |
 | D13 | `MOCK_PREMIUM` (usuário simulado só em `RAILS_ENV=development`) | nenhum em produção | conveniência de desenvolvimento não portada |
-| D14 | New Relic ausente | perda de APM/alertas até ligar um agente | ver seção 6; risco listado no relatório final |
+| D14 | New Relic: o prefixo das transações é `WebTransaction/Go/` (no Rails, `WebTransaction/Controller/`); as métricas do cache Ruby (`Custom/Cache/*`) não existem; os logs não são encaminhados ao New Relic | consultas NRQL por nome de transação precisam do prefixo novo | agente Go; o cache é outro ([ARCHITECTURE.md](ARCHITECTURE.md#7-observabilidade)) |
 | D15 | Várias faixas de byte (`Range: bytes=0-1,5-9`) nos assets do Swagger UI são servidas inteiras | nenhum para navegadores | o Rack responderia `multipart/byteranges` |

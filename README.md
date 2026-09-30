@@ -9,6 +9,7 @@ lado a lado, pelo teste diferencial em `test/diff`.
 
 | Documento | Conteúdo |
 |---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | A arquitetura de produção só com Go: processos, schema, conteúdo, jobs, observabilidade, testes sem o Rails e o checklist para apagá-lo |
 | [docs/EQUIVALENCE.md](docs/EQUIVALENCE.md) | Mapa de equivalência (rotas, jobs, agenda, rake, integrações, caches) e desvios conhecidos |
 | [docs/ROUTE_COVERAGE.md](docs/ROUTE_COVERAGE.md) | Cada rota do Rails, sua implementação em Go e quantas comparações a exercitam |
 | [docs/TESTING.md](docs/TESTING.md) | O oráculo Rails, o teste diferencial e como rodá-lo |
@@ -24,7 +25,7 @@ lado a lado, pelo teste diferencial em `test/diff`.
 cmd/
   estevao-api/      servidor HTTP (equivale ao Puma + Rails)
   estevao-worker/   worker de jobs sobre as tabelas do Solid Queue (equivale a bin/jobs)
-  estevao-seed/     seeds: load (db:seed) e export do dataset canônico
+  estevao/          operação: schema e migrações (db), conteúdo (seed), Bíblias, flags, caches
   difftest/         teste diferencial Rails × Go
   routecov/         relatório de cobertura por rota (docs/ROUTE_COVERAGE.md)
   bench/            medição de desempenho Rails × Go
@@ -57,10 +58,8 @@ não testa código de livro.
 Pré-requisitos: Go 1.24, PostgreSQL 16, Redis e o pacote `tzdata` do sistema.
 
 ```bash
-# banco novo (local): schema + seeds
-createdb estevao_dev
-psql estevao_dev -f db/schema.sql
-DATABASE_URL=postgres://localhost/estevao_dev go run ./cmd/estevao-seed load
+# banco novo (local): cria o banco, carrega db/schema.sql e seeds/
+DATABASE_URL=postgres://localhost/estevao_dev go run ./cmd/estevao db prepare
 
 # servidor e worker (mesmas variáveis de ambiente do Rails)
 export DATABASE_URL=postgres://localhost/estevao_dev REDIS_URL=redis://localhost:6379/0 RAILS_ENV=development

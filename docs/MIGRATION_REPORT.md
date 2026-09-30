@@ -34,7 +34,7 @@ das decisões e verificações da seção 6 e do procedimento de
 
 | Onde | O quê |
 |---|---|
-| `cmd/estevao-api`, `cmd/estevao-worker`, `cmd/estevao-seed` | servidor HTTP, worker de jobs (+ `-warm-calendar`), seeder |
+| `cmd/estevao-api`, `cmd/estevao-worker`, `cmd/estevao` | servidor HTTP, worker de jobs (+ `-warm-calendar`), ferramenta de operação (schema, seeds, Bíblias, flags, caches) |
 | `cmd/difftest`, `cmd/routecov`, `cmd/bench` | teste diferencial, relatório de cobertura por rota, benchmark |
 | `internal/web`, `internal/app`, `internal/rb`, `internal/rx`, `internal/ar` | pilha HTTP compatível com Rails/Rack e ports de semântica Ruby/ActiveSupport/Active Record usados pelos contratos (formatação de JSON, datas, `Date._parse`, regex Onigmo, casts) |
 | `internal/api/v1`, `internal/api/v2` | controllers |

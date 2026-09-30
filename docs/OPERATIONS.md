@@ -7,16 +7,21 @@
 ## 1. Desenvolvimento
 
 ```bash
-createdb estevao_dev && psql estevao_dev -f db/schema.sql
-DATABASE_URL=postgres://localhost/estevao_dev go run ./cmd/estevao-seed load
 export DATABASE_URL=postgres://localhost/estevao_dev REDIS_URL=redis://localhost:6379/0
-go run ./cmd/estevao-api      # :3000
-go run ./cmd/estevao-worker   # fila e agenda
+go run ./cmd/estevao db prepare   # cria o banco, carrega schema e seeds (~5 s)
+go run ./cmd/estevao-api          # :3000
+go run ./cmd/estevao-worker       # fila e agenda
 ```
 
+Mudança de schema: `estevao db new <nome>`, `estevao db migrate`, `estevao db
+dump` ([DATABASE.md](DATABASE.md)). Mudança de conteúdo: editar `seeds/` e
+`estevao seed sync` ([SEEDS.md](SEEDS.md)).
+
 Antes de cada commit: `gofmt -l cmd internal test` vazio, `go vet ./...`,
-`go test ./...`. Mudança que possa afetar respostas: rode as suítes
-diferenciais afetadas ([TESTING.md](TESTING.md)).
+`go test ./...`. Os testes de banco precisam de
+`MIGRATE_TEST_DATABASE_URL=postgres://.../postgres`. Mudança que possa afetar
+respostas: rode as suítes diferenciais afetadas, ao vivo ou contra o corpus
+gravado ([TESTING.md](TESTING.md)).
 
 ## 2. Verificação antes de um release
 
@@ -36,17 +41,21 @@ diferenciais afetadas ([TESTING.md](TESTING.md)).
 ## 3. Deploy (serviços paralelos, sem corte)
 
 A imagem (`Dockerfile`) contém `estevao-api`, `estevao-worker` e
-`estevao-seed`. Em Railway, dois serviços novos a partir deste repositório,
+`estevao`. Em Railway, dois serviços novos a partir deste repositório,
 usando **as mesmas variáveis compartilhadas** do Rails (`DATABASE_URL`,
 `REDIS_URL`, Firebase, Stripe, RevenueCat, Strapi, S3, TTS, `TRUSTED_SERVER_KEY`,
 `APP_INTERNAL_IDENTIFIER`, etc.) e `RAILS_ENV=production`:
 
 * web: `deploy/railway.toml` (healthcheck `/up`, `preDeployCommand` =
-  `estevao-worker -warm-calendar`);
+  `estevao db prepare && estevao-worker -warm-calendar`);
 * worker: `deploy/railway.worker.toml` — **mantenha-o desligado** até a etapa 4.3.
 
-Nenhum dos dois roda `db:prepare`: o schema continua sendo aplicado pelo deploy
-Rails ([DATABASE.md](DATABASE.md)).
+O `estevao db prepare` do deploy aplica as migrações do Go. Enquanto
+`db/migrations` estiver vazio, ele só confere que o banco tem a baseline Rails.
+Se não tiver, o deploy falha em vez de subir contra um schema mais antigo.
+Durante a convivência, o Rails e o Go usam o mesmo advisory lock de migração,
+e uma migração nunca roda em paralelo à outra. Quem cria migrações nesse
+período é uma decisão ([ARCHITECTURE.md](ARCHITECTURE.md#10-decisões-que-ficam-com-vocês)).
 
 ## 4. Corte de tráfego (gradual)
 
@@ -71,10 +80,11 @@ Rails ([DATABASE.md](DATABASE.md)).
    `GenerateLiturgicalAudioJob` pendente.
 4. **100%.** Todo o tráfego no Go. Mantenha os serviços Rails existindo (parados
    ou com 0 réplicas) durante a janela de rollback combinada.
-5. **Observabilidade.** O Go não envia dados ao New Relic (desvio D14). Antes da
-   etapa 2, defina como os alertas atuais serão cobertos: alertas por logs
-   (`level=ERROR`, status 5xx) ou um agente APM ligado ao gancho
-   `web.Server.ReportError`.
+5. **Observabilidade.** O Go envia transações, erros e as métricas custom ao New
+   Relic quando `NEW_RELIC_LICENSE_KEY` está definida
+   ([ARCHITECTURE.md](ARCHITECTURE.md#7-observabilidade)). Na convivência, dê
+   ao serviço Go um `NEW_RELIC_APP_NAME` próprio. Revise os alertas que filtram
+   por nome de transação: o prefixo passa a ser `WebTransaction/Go/`.
 
 ## 5. Rollback
 
@@ -91,3 +101,23 @@ porque os dois lados leem e escrevem os mesmos formatos.
 Depois de desligar o Rails em definitivo, o repositório Rails continua sendo a
 ferramenta das migrações e das rakes de manutenção listadas em
 [EQUIVALENCE.md](EQUIVALENCE.md#5-tarefas-rake), até que sejam substituídas.
+
+## 6. Tarefas de operação (as rake do Rails)
+
+| Rails | Go |
+|---|---|
+| `rails db:prepare`, `db:migrate`, `db:rollback`, `db:migrate:status` | `estevao db prepare`, `migrate`, `rollback`, `status` |
+| `rails g migration` + `db:schema:dump` | `estevao db new <nome>` + `estevao db dump` |
+| `rails db:seed` | `estevao db prepare` (banco novo) ou `estevao seed load` |
+| `prayer_books:seed[código]`, `prayer_books:seed_all`, `prayer_books:setup_dwdo`, `liturgical_texts:sync_catalog`, `import:collects`, `psalters:seed`, `background_music:seed`, `prayer_books:seed_psalm_translation_preferences` | editar `seeds/` e `estevao seed sync [-book código] -apply` |
+| `bible:*` (download, import, setup, stats, clear, reimport) | `estevao bible export` / `import [-replace]` / `stats`; uma fonte nova é convertida para o formato do arquivo ([ARCHITECTURE.md](ARCHITECTURE.md#4-conteúdo-litúrgico-seeds-e-estevao-seed)) |
+| `feature_flags:list/enable/disable/reset` | `estevao flags list`; `estevao flags enable`, `disable` ou `reset` `FEATURE [global \| user ALVO]` |
+| `cache:clear_all`, `cache:clear`, `cache:clear_daily_office` | `estevao cache clear [-pattern daily_office/*]`; apaga só os caches e preserva rate limit e contadores de uso |
+| `cache:warm`, `cache:warm_calendar` | `estevao cache warm` (enfileira `CacheWarmerJob`), `estevao-worker -warm-calendar` |
+| `prayer_books:touch[códigos]` | `estevao books touch códigos...` |
+| `notifications:test_notification[email]` | `estevao notifications test email` |
+| `notifications:send_streak_reminders`, `cleanup_old_tokens` | jobs agendados no worker, como no Rails |
+| `audio:*`, `office_audio:*` | a geração de áudio é operada pelos endpoints `api/v1/admin/audio/*` e pelos jobs do worker; as rakes de sincronização de arquivos locais (`audio:sync`, `upload_to_railway`) eram de uma instalação anterior ao bucket |
+| `avatars:storage:*`, `background_music:import/withdraw/verify` | migrações pontuais já executadas; importar música nova continua exigindo transcodificação fora da aplicação |
+| `benchmark:*`, `cache:stats/health/performance`, `db:integrity:*`, `db:verify`, `performance:analyze`, `redis:diagnostics`, `preferences:report` | diagnósticos: `cmd/bench`, `PPROF_ADDR`, New Relic e consultas SQL diretas |
+| `life_rules:translate` | tradução pontual das regras embutidas; o resultado está em `seeds/` |

@@ -1,4 +1,4 @@
-# Testes: o Rails como oráculo
+# Testes: o Rails como oráculo, e depois dele
 
 A equivalência é provada comparando as duas aplicações em execução, lado a
 lado, contra o mesmo banco. O repositório Rails não é modificado: o oráculo o
@@ -34,6 +34,68 @@ go run ./cmd/difftest -suite audio_jobs -dump /tmp/dump                      # g
 
 `RAILS_RUNNER` é um script que roda `bin/rails runner "$@"` no repositório Rails
 com o mesmo ambiente do oráculo (ver o exemplo em `run-oracle.sh`).
+
+## Corpus gravado: testar o Go sem o Rails
+
+O teste diferencial precisa do Rails rodando. O corpus guarda as respostas dele
+para que o Go continue verificável depois que o Rails for apagado.
+
+```bash
+# onde o oráculo roda (grava e compara ao vivo ao mesmo tempo)
+RAILS_RUNNER=/caminho/rails-runner.sh test/corpus/record.sh /algum/lugar/corpus
+# em qualquer máquina com PostgreSQL 16, Redis e Python 3 (sem Ruby)
+test/corpus/replay.sh /algum/lugar/corpus
+test/corpus/replay.sh /algum/lugar/corpus -suite calendar_day,daily_office
+```
+
+O diretório do corpus tem três partes:
+* **`database.dump`:** o banco no instante da gravação (`pg_dump -Fc`), com as
+  Bíblias importadas e as fixtures;
+* **`<suíte>.jsonl.gz`:** a resposta **do Rails** a cada requisição e cenário,
+  já normalizada como a comparação ao vivo normaliza (os mesmos campos
+  voláteis), com os snapshots de banco, S3 e jobs de cada cenário;
+* **`meta.json`:** o instante da gravação e os commits do Go e do Rails.
+
+O `record.sh` recusa gravar perto da virada do dia (23h–1h e 2h–4h UTC). O
+replay é mais rápido que a gravação e o relógio dele fica um pouco atrás; uma
+meia-noite nesse intervalo mudaria a data de algumas requisições.
+
+### O relógio de teste
+
+As respostas dependem de "hoje":
+* `/calendar/today`;
+* sequências de orações e anotações;
+* expiração de tokens;
+* validade de URLs assinadas.
+
+O replay acontece dias ou meses depois da gravação. Por isso **toda leitura do
+relógio passa por `internal/clock`**. Com `ESTEVAO_TEST_CLOCK=<instante RFC
+3339>`, o processo acredita que o tempo começou naquele instante e continua
+correndo dali.
+
+O `replay.sh` liga isso no servidor Go e no `difftest`:
+* o `difftest` assina os tokens com esse relógio;
+* os processos que ele inicia (os workers dos cenários) herdam o instante atual
+  (`clock.ChildEnv`);
+* o SQL das fixtures troca `now()`, `CURRENT_DATE` e similares pelo instante do
+  relógio (`diff.ClockSQL`), porque o PostgreSQL não tem como ser enganado;
+* a verificação de JWT usa o mesmo relógio (`jwt.WithTimeFunc`).
+
+O código de produção nunca chama `time.Now()` diretamente. Em produção a
+variável não existe e o relógio é o real.
+
+### Quando gravar de novo
+
+* Uma suíte mudou (requisição nova, cenário novo). O replay acusa `STALE` e
+  pede nova gravação.
+* Uma mudança **intencional** de comportamento. Enquanto o Rails existir,
+  grave a partir dele. Depois, grave a partir do Go revisado:
+  `difftest -rails <go> -go <go> -record ...`; a revisão da diferença faz o
+  papel do oráculo.
+
+O corpus contém textos bíblicos com direitos autorais e não entra no git
+(`.gitignore`). Onde guardá-lo:
+[ARCHITECTURE.md](ARCHITECTURE.md#10-decisões-que-ficam-com-vocês).
 
 ## Como uma comparação funciona
 
