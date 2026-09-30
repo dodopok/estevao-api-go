@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	dbfiles "github.com/dodopok/estevao-api-go/db"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/migrate"
 	"github.com/dodopok/estevao-api-go/internal/seed"
 )
@@ -198,7 +199,7 @@ func dbNew(args []string) error {
 	if fs.NArg() != 1 || !nameRe.MatchString(fs.Arg(0)) {
 		return fmt.Errorf("usage: estevao db new <snake_case_name>")
 	}
-	version := time.Now().UTC().Format("20060102150405")
+	version := clock.Now().UTC().Format("20060102150405")
 	file := filepath.Join(*dir, version+"_"+fs.Arg(0)+".sql")
 	body := "-- migrate:up\n\n\n-- migrate:down\n\n"
 	if err := os.WriteFile(file, []byte(body), 0o644); err != nil {

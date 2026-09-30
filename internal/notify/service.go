@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dodopok/estevao-api-go/internal/ar"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/users"
@@ -296,7 +297,7 @@ func SendToUsers(ctx context.Context, userIDs []int64, title, body any, data *rb
 // Broadcast ports NotificationService.broadcast with an idempotency key (the
 // job id). An unavailable FCM propagates, for the job to retry.
 func Broadcast(ctx context.Context, title, body any, data *rb.Map, idempotencyKey string) (total, success, failed int) {
-	cutoff := time.Now().Add(-60 * 24 * time.Hour)
+	cutoff := clock.Now().Add(-60 * 24 * time.Hour)
 	must(db.Q().QueryRow(ctx, `SELECT COUNT(DISTINCT users.id) FROM users INNER JOIN fcm_tokens ON fcm_tokens.user_id = users.id
 		WHERE (fcm_tokens.updated_at > $1)`, cutoff).Scan(&total))
 	n := &Notification{Title: title, Body: body, Data: withClickAction(data)}
@@ -323,3 +324,23 @@ func BroadcastUsers(ctx context.Context) int64 {
 }
 
 var _ = pgx.ErrNoRows
+
+// SendAnnouncement ports NotificationService.send_announcement (used by
+// `estevao notifications test`, rake notifications:test_notification).
+func SendAnnouncement(ctx context.Context, u *users.User, title, body string, url *string) Result {
+	data := rb.M("type", "announcement")
+	if url != nil {
+		data.Set("url", *url)
+	}
+	data.Set("click_action", "FLUTTER_NOTIFICATION_CLICK")
+	return sendWithLog(ctx, u, &Notification{Title: title, Body: body, Data: data}, "announcement", "")
+}
+
+// ActiveTokens counts a user's active FCM tokens (FcmToken.active: updated
+// in the last 60 days).
+func ActiveTokens(ctx context.Context, userID int64) (int, error) {
+	var n int
+	err := db.Q().QueryRow(ctx, `SELECT count(*) FROM fcm_tokens WHERE user_id = $1 AND updated_at > $2`,
+		userID, clock.Now().UTC().Add(-60*24*time.Hour)).Scan(&n)
+	return n, err
+}

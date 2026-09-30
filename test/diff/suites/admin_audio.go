@@ -11,9 +11,12 @@ import (
 // current-looking and stale fingerprints), with usages, candidates, a
 // customization, generation sessions, operations and a dead worker job.
 var adminAudioFixture = rosaryFixture + `
-DELETE FROM audio_clip_candidates WHERE audio_clip_id BETWEEN 990001 AND 990099 OR id BETWEEN 990001 AND 990099;
-DELETE FROM audio_clip_usages WHERE audio_clip_id BETWEEN 990001 AND 990099;
-DELETE FROM user_audio_usages WHERE audio_clip_id BETWEEN 990001 AND 990099;
+DELETE FROM audio_clip_candidates WHERE audio_clip_id BETWEEN 990001 AND 990099 OR id BETWEEN 990001 AND 990099
+  OR audio_clip_id IN (SELECT id FROM audio_clips WHERE key LIKE 'dtaa-%');
+DELETE FROM audio_clip_usages WHERE audio_clip_id BETWEEN 990001 AND 990099
+  OR audio_clip_id IN (SELECT id FROM audio_clips WHERE key LIKE 'dtaa-%');
+DELETE FROM user_audio_usages WHERE audio_clip_id BETWEEN 990001 AND 990099
+  OR audio_clip_id IN (SELECT id FROM audio_clips WHERE key LIKE 'dtaa-%');
 DELETE FROM audio_clips WHERE id BETWEEN 990001 AND 990099 OR key LIKE 'dtaa-%';
 DELETE FROM audio_clip_customizations WHERE created_by = 'difftest-aa';
 DELETE FROM audio_generation_sessions;

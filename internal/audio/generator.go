@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -388,7 +389,7 @@ func (g *Generator) record(ctx context.Context, key, filename, normalized, lineT
 	instructions := p.InstructionsSHA256()
 	fingerprint := p.ConfigurationFingerprint(&normalized)
 	count := rubyLen(normalized)
-	now := time.Now().UTC().Truncate(time.Microsecond)
+	now := clock.Now().UTC().Truncate(time.Microsecond)
 	tag, err := db.Q().Exec(ctx, `UPDATE audio_clips SET filename = $2::varchar, text = $3::text, line_type = $4::varchar,
 		kind = 'line', provider = $5::varchar, voice = $6::varchar, model = $7::varchar, speed = $8::float8, duration = $9::float8,
 		character_count = $10::int, language = $11::varchar, instructions_sha256 = $12::varchar,

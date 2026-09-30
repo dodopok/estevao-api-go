@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 const insertBatch = 1000
@@ -59,7 +60,7 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 		cache[file] = rows
 		return rows, nil
 	}
-	now := marshal(time.Now().UTC().Format("2006-01-02T15:04:05.999999"))
+	now := marshal(clock.Now().UTC().Format("2006-01-02T15:04:05.999999"))
 	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -174,7 +175,7 @@ func decodeRow(t *table, row map[string]json.RawMessage, book string, ids map[st
 				}
 			}
 			// Date.today: the loading machine's local day.
-			out[c] = marshal(time.Now().AddDate(0, 0, days).Format("2006-01-02"))
+			out[c] = marshal(clock.Now().AddDate(0, 0, days).Format("2006-01-02"))
 		}
 	}
 	for _, r := range t.refs {

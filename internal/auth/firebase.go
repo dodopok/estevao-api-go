@@ -18,6 +18,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/web"
 )
@@ -78,12 +79,12 @@ func fetchCerts() (map[string]string, error) {
 func (c *certCache) certificates(strict bool) (map[string]string, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.fresh != nil && time.Since(c.fresh.fetched) < time.Hour {
+	if c.fresh != nil && clock.Since(c.fresh.fetched) < time.Hour {
 		return c.fresh.certs, nil
 	}
 	certs, err := fetchCerts()
 	if err != nil {
-		if c.fresh != nil && time.Since(c.fresh.fetched) < 24*time.Hour {
+		if c.fresh != nil && clock.Since(c.fresh.fetched) < 24*time.Hour {
 			return c.fresh.certs, nil
 		}
 		if !strict {
@@ -91,7 +92,7 @@ func (c *certCache) certificates(strict bool) (map[string]string, error) {
 		}
 		return nil, web.NewInfraError("ExternalServiceUnavailable", "Firebase certificates are temporarily unavailable", "FIREBASE_CERTIFICATES_UNAVAILABLE")
 	}
-	c.fresh = &certSet{fetched: time.Now(), certs: certs}
+	c.fresh = &certSet{fetched: clock.Now(), certs: certs}
 	c.keys = map[string]*rsa.PublicKey{}
 	return certs, nil
 }
@@ -166,6 +167,7 @@ func VerifyToken(token string, developer bool) (jwt.MapClaims, error) {
 		jwt.WithIssuedAt(),
 		jwt.WithIssuer("https://securetoken.google.com/"+projectID),
 		jwt.WithAudience(projectID),
+		jwt.WithTimeFunc(clock.Now),
 	).ParseWithClaims(token, claims, func(*jwt.Token) (any, error) { return key, nil })
 	if err != nil || !verified.Valid {
 		return nil, ErrInvalidToken

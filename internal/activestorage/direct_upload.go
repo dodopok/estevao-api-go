@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/s3"
@@ -79,7 +80,7 @@ func DirectUploadsCreate(c *web.Context) {
 		meta := string(rb.JSON(metadata))
 		b.Metadata = &meta
 	}
-	now := time.Now().UTC().Truncate(time.Microsecond)
+	now := clock.Now().UTC().Truncate(time.Microsecond)
 	err := db.Q().QueryRow(c.Ctx, `INSERT INTO active_storage_blobs (key, filename, content_type, metadata, service_name, byte_size, checksum, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, created_at`,
 		b.Key, b.Filename, b.ContentType, b.Metadata, b.ServiceName, b.ByteSize, b.Checksum, now).Scan(&b.ID, &b.CreatedAt)
@@ -96,7 +97,7 @@ func DirectUploadsCreate(c *web.Context) {
 	}
 	client := s3.FromEnv()
 	out.Set("direct_upload", rb.M(
-		"url", client.PresignedPut(b.Key, 300, rb.ToS(ct), b.ByteSize, cs, time.Now()),
+		"url", client.PresignedPut(b.Key, 300, rb.ToS(ct), b.ByteSize, cs, clock.Now()),
 		"headers", rb.M("Content-Type", ct, "Content-MD5", cs, "Content-Disposition", DispositionWith("", b.Filename)),
 	))
 	c.JSON(200, out)

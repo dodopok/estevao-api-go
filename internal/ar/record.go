@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -152,7 +153,7 @@ func CastDatetime(v any) any {
 	case time.Time:
 		return x.Truncate(time.Microsecond)
 	case string:
-		t, ok := rb.ZoneParse(x, rb.AppZone, time.Now())
+		t, ok := rb.ZoneParse(x, rb.AppZone, clock.Now())
 		if !ok {
 			return nil
 		}

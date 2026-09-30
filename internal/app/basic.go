@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -24,7 +24,7 @@ func health(c *web.Context) {
 		}
 	}
 	if format == "json" {
-		c.JSON(200, rb.M("status", "up", "timestamp", time.Now().In(rb.AppZone).Format("2006-01-02T15:04:05-07:00")))
+		c.JSON(200, rb.M("status", "up", "timestamp", clock.Now().In(rb.AppZone).Format("2006-01-02T15:04:05-07:00")))
 		return
 	}
 	c.Raw(200, "text/html; charset=utf-8", []byte(`<!DOCTYPE html><html><body style="background-color: green"></body></html>`))

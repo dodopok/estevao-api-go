@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/calgrid"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/dailyoffice"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
+	"github.com/dodopok/estevao-api-go/internal/metrics"
 	"github.com/dodopok/estevao-api-go/internal/prefs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/reading"
@@ -115,7 +116,8 @@ func booksByID(ctx context.Context, codes []string) ([]*store.PrayerBook, error)
 // cacheWarmer ports CacheWarmerJob#perform(date:, prayer_book_codes:,
 // warm_family_rites:).
 func cacheWarmer(ctx context.Context, e *solidqueue.Execution) error {
-	date := civil.FromTime(time.Now().UTC())
+	started := clock.Now()
+	date := civil.FromTime(clock.Now().UTC())
 	if v := e.Kwarg("date"); rb.Present(v) {
 		d, ok := civil.ParseISO(rb.ToS(v))
 		if !ok {
@@ -192,6 +194,16 @@ func cacheWarmer(ctx context.Context, e *solidqueue.Execution) error {
 	}
 	slog.Info(fmt.Sprintf("[CacheWarmer] Completed date=%s offices=%d family_offices=%d readings=%d errors=%d",
 		date.ISO(), s.counts["offices"], s.counts["family_offices"], s.counts["readings"], len(s.errors)))
+	// CacheWarmerJob#record_metrics.
+	metrics.Record("CacheWarmer/Duration", float64(clock.Since(started).Milliseconds()))
+	metrics.Record("CacheWarmer/PrayerBooks", float64(len(pbs)))
+	metrics.Record("CacheWarmer/StaticCaches", float64(s.counts["static"]))
+	metrics.Record("CacheWarmer/Calendars", float64(s.counts["calendars"]))
+	metrics.Record("CacheWarmer/Readings", float64(s.counts["readings"]))
+	metrics.Record("CacheWarmer/Offices", float64(s.counts["offices"]))
+	metrics.Record("CacheWarmer/FamilyOffices", float64(s.counts["family_offices"]))
+	metrics.Record("CacheWarmer/Errors", float64(len(s.errors)))
+	metrics.Increment("CacheWarmer/Runs")
 	if len(s.errors) > 0 {
 		first := s.errors
 		if len(first) > 3 {
@@ -231,7 +243,7 @@ func calendarWarmer(ctx context.Context, e *solidqueue.Execution) error {
 		}
 		pbs = kept
 	}
-	today := civil.FromTime(time.Now().In(rb.AppZone))
+	today := civil.FromTime(clock.Now().In(rb.AppZone))
 	first := civil.MustNew(today.Year(), today.Month(), 1)
 	warmed, already, failures := 0, 0, 0
 	for _, pb := range pbs {

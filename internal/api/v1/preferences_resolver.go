@@ -125,6 +125,10 @@ func (r *resolver) resolvedPreferences() *prefs.Resolved {
 	}
 	must(err)
 	r.resolved = res
+	// For the request's New Relic attributes (@resolved_preferences).
+	if code := res.String("prayer_book_code"); code != "" {
+		r.c.Set("resolved_prayer_book_code", code)
+	}
 	return res
 }
 

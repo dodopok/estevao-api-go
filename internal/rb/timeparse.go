@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 // TimeParse ports Ruby 3.2's Time.parse(s) (no block, so two-digit years
@@ -354,7 +356,7 @@ func TimeXMLSchema(s string, loc *time.Location) (time.Time, error) {
 		nanos.Mul(frac, big.NewRat(1_000_000_000, 1))
 	}
 	if m[8] != "" {
-		off := ZoneOffset(m[8], time.Now().Year(), loc)
+		off := ZoneOffset(m[8], clock.Now().Year(), loc)
 		if off == nil {
 			return time.Time{}, errors.New("invalid xmlschema format: " + Inspect(s))
 		}

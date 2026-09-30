@@ -12,6 +12,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/audio"
 	"github.com/dodopok/estevao-api-go/internal/audioadmin"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -161,7 +162,7 @@ func RegenerateCandidate(ctx context.Context, clip *audioadmin.Clip, additional 
 		if msg := candidateInvalid(key, filename, normalized, provider); msg != "" {
 			return &rb.RubyError{Class: "ActiveRecord::RecordInvalid", Message: "Validation failed: " + msg}
 		}
-		now := time.Now().UTC().Truncate(time.Microsecond)
+		now := clock.Now().UTC().Truncate(time.Microsecond)
 		characters = len([]rune(normalized))
 		err = db.Q().QueryRow(ctx, `INSERT INTO audio_clip_candidates (audio_clip_id, audio_operation_id, key, filename, text, line_type,
 			provider, voice, model, speed, duration, character_count, language, instructions_sha256, configuration_fingerprint,

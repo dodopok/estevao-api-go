@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -37,6 +39,28 @@ type Scenario struct {
 	// Scrub rewrites every snapshot line (values that are random by
 	// design, such as a candidate file's suffix).
 	Scrub []Scrub
+}
+
+// sqlClock matches the SQL functions that read the database clock.
+var sqlClock = regexp.MustCompile(`(?i)\b(now\(\)|current_timestamp|transaction_timestamp\(\)|statement_timestamp\(\)|clock_timestamp\(\)|current_date|localtimestamp)`)
+
+// ClockSQL makes fixture SQL read the application clock instead of the
+// database's when a test clock is in force (replaying the recorded
+// corpus): the database cannot be told another time, the SQL can.
+func ClockSQL(sql string) string {
+	if !clock.Shifted() {
+		return sql
+	}
+	ts := "'" + clock.Now().UTC().Format("2006-01-02T15:04:05.999999Z") + "'::timestamptz"
+	return sqlClock.ReplaceAllStringFunc(sql, func(m string) string {
+		switch strings.ToLower(m) {
+		case "current_date":
+			return "((" + ts + ") AT TIME ZONE current_setting('TimeZone'))::date"
+		case "localtimestamp":
+			return "((" + ts + ") AT TIME ZONE current_setting('TimeZone'))"
+		}
+		return "(" + ts + ")"
+	})
 }
 
 // Scrub is one regexp replacement applied to snapshot lines.
@@ -78,7 +102,7 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		return nil, fmt.Errorf("discard pending jobs: %w", err)
 	}
 	if s.Setup != "" {
-		if _, err := conn.Exec(ctx, s.Setup); err != nil {
+		if _, err := conn.Exec(ctx, ClockSQL(s.Setup)); err != nil {
 			return nil, fmt.Errorf("setup: %w", err)
 		}
 	}
@@ -137,7 +161,7 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		}
 	}
 	for _, q := range s.Snapshot {
-		rows, err := conn.Query(ctx, q)
+		rows, err := conn.Query(ctx, ClockSQL(q))
 		if err != nil {
 			return nil, fmt.Errorf("snapshot %q: %w", q, err)
 		}
@@ -170,7 +194,7 @@ func RunScenario(ctx context.Context, s Scenario, side Side) (*ScenarioResult, e
 		out.Snapshots = append(out.Snapshots, []string{s.scrub(string(b))})
 	}
 	if s.Teardown != "" {
-		if _, err := conn.Exec(ctx, s.Teardown); err != nil {
+		if _, err := conn.Exec(ctx, ClockSQL(s.Teardown)); err != nil {
 			return nil, fmt.Errorf("teardown: %w", err)
 		}
 	}

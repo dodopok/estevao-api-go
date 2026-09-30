@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -48,7 +49,7 @@ func scanSharedOffice(row interface{ Scan(...any) error }) (*SharedOffice, error
 
 // ActiveSharedOffice ports SharedOffice.find_active.
 func ActiveSharedOffice(ctx context.Context, code string) (*SharedOffice, error) {
-	row := db.Q().QueryRow(ctx, `SELECT `+sharedOfficeColumns+` FROM shared_offices WHERE expires_at > $1 AND short_code = $2 LIMIT 1`, time.Now().UTC(), code)
+	row := db.Q().QueryRow(ctx, `SELECT `+sharedOfficeColumns+` FROM shared_offices WHERE expires_at > $1 AND short_code = $2 LIMIT 1`, clock.Now().UTC(), code)
 	s, err := scanSharedOffice(row)
 	if db.NoRows(err) {
 		return nil, nil
@@ -59,6 +60,6 @@ func ActiveSharedOffice(ctx context.Context, code string) (*SharedOffice, error)
 // ExpiredSharedOfficeExists ports SharedOffice.expired.find_by(short_code:).
 func ExpiredSharedOfficeExists(ctx context.Context, code string) (bool, error) {
 	var ok bool
-	err := db.Q().QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM shared_offices WHERE expires_at <= $1 AND short_code = $2)`, time.Now().UTC(), code).Scan(&ok)
+	err := db.Q().QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM shared_offices WHERE expires_at <= $1 AND short_code = $2)`, clock.Now().UTC(), code).Scan(&ok)
 	return ok, err
 }

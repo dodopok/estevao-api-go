@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -28,13 +29,13 @@ import (
 type Storage struct {
 	provider *Provider
 	remote   bool
-	// now is the signing clock (time.Now outside tests).
+	// now is the signing clock (clock.Now outside tests).
 	now func() time.Time
 }
 
 // NewStorage ports Audio::Storage.new(provider).
 func NewStorage(p *Provider) *Storage {
-	return &Storage{provider: p, remote: config.RailsEnv() == "production" || !rb.BlankString(os.Getenv("AUDIO_STORAGE_SERVICE")), now: time.Now}
+	return &Storage{provider: p, remote: config.RailsEnv() == "production" || !rb.BlankString(os.Getenv("AUDIO_STORAGE_SERVICE")), now: clock.Now}
 }
 
 // FilenameFor ports filename_for(key).

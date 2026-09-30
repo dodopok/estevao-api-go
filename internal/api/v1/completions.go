@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
@@ -162,7 +163,7 @@ func CompletionsCreate(c *web.Context) {
 		}
 		y, m, d = parsed.Y, parsed.M, parsed.D
 	} else {
-		ty, tm, td := userToday(u, time.Now())
+		ty, tm, td := userToday(u, clock.Now())
 		y, m, d = int64(ty), int64(tm), int64(td)
 	}
 	office := param("office_type")

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/test/diff"
 )
 
@@ -182,7 +183,7 @@ func settleWith(enqueue bool, classes []string, env []string) func(side diff.Sid
 				flags = append(flags, "-enqueue")
 			}
 			cmd := exec.Command(worker, append(flags, classes...)...)
-			cmd.Env = append(os.Environ(), env...)
+			cmd.Env = append(append(os.Environ(), env...), clock.ChildEnv()...)
 			out, err := cmd.CombinedOutput()
 			if err != nil {
 				return fmt.Errorf("%v: %s", err, out)

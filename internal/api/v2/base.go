@@ -10,6 +10,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/prefs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -37,7 +38,7 @@ const (
 
 var textFormats = []string{textVerses, textPlain, textMarkdown}
 
-func today() civil.Date { return civil.FromTime(time.Now().In(rb.AppZone)) }
+func today() civil.Date { return civil.FromTime(clock.Now().In(rb.AppZone)) }
 
 func must(err error) {
 	if err != nil {
@@ -193,7 +194,7 @@ func (r *req) renderResource(data any, meta *rb.Map, links *rb.Map, cost, maxAge
 	if r.ctrl.contextMeta != nil && r.ctrl.contextMeta(r) {
 		m = r.context().meta()
 	}
-	m.Set("generated_at", time.Now().UTC().Format("2006-01-02T15:04:05Z"))
+	m.Set("generated_at", clock.Now().UTC().Format("2006-01-02T15:04:05Z"))
 	if meta != nil {
 		m = m.Merge(meta)
 	}

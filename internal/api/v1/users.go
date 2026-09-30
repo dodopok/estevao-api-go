@@ -10,6 +10,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/activestorage"
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -181,7 +182,7 @@ var UsersUploadAvatar = withUser(func(c *web.Context, u *users.User) {
 		panic(&web.StandardError{Class: "ArgumentError", Message: "Cannot get a signed_id for a new record"})
 	}
 	_, err := activestorage.Attach(c.Ctx, "User", "users", u.ID, "avatar",
-		activestorage.Upload{Filename: f.OriginalFilename, ContentType: f.ContentType, Data: f.Data}, time.Now())
+		activestorage.Upload{Filename: f.OriginalFilename, ContentType: f.ContentType, Data: f.Data}, clock.Now())
 	must(err)
 	photo, _ := profilePhotoURL(c.Ctx, u)
 	c.JSON(200, rb.M("message", "Avatar uploaded successfully", "photo_url", photo, "has_custom_avatar", true))
@@ -195,7 +196,7 @@ var UsersDeleteAvatar = withUser(func(c *web.Context, u *users.User) {
 		c.JSON(404, rb.M("error", "No custom avatar to remove"))
 		return
 	}
-	must(activestorage.Purge(c.Ctx, "User", "users", u.ID, "avatar", time.Now()))
+	must(activestorage.Purge(c.Ctx, "User", "users", u.ID, "avatar", clock.Now()))
 	c.JSON(200, rb.M("message", "Avatar removed successfully", "photo_url", rb.Deref(u.PhotoURL), "has_custom_avatar", false))
 })
 

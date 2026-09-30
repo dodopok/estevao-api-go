@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 // Client is one bucket on one endpoint.
@@ -43,7 +45,7 @@ func FromEnv() *Client {
 	return &Client{
 		AccessKey: os.Getenv("AVATAR_BUCKET_ACCESS_KEY_ID"), SecretKey: os.Getenv("AVATAR_BUCKET_SECRET_ACCESS_KEY"),
 		Region: region, Bucket: os.Getenv("AVATAR_BUCKET_NAME"), Endpoint: os.Getenv("AVATAR_BUCKET_ENDPOINT"),
-		HTTP: &http.Client{Timeout: 60 * time.Second}, Now: time.Now,
+		HTTP: &http.Client{Timeout: 60 * time.Second}, Now: clock.Now,
 	}
 }
 

@@ -7,7 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 // WeakETag ports ActionDispatch's generate_weak_etag for a single string
@@ -41,7 +42,7 @@ func (c *Context) ExpiresIn(seconds int, public bool) {
 	}
 	c.Header.Set("Cache-Control", "max-age="+strconv.Itoa(seconds)+", "+vis)
 	if c.Header.Get("Date") == "" {
-		c.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+		c.Header.Set("Date", clock.Now().UTC().Format(http.TimeFormat))
 	}
 }
 

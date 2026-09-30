@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -16,7 +17,7 @@ type Enqueued struct {
 	ActiveJobID string
 }
 
-func now() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }
+func now() time.Time { return clock.Now().UTC().Truncate(time.Microsecond) }
 
 // Enqueue ports SolidQueue::Job.enqueue (perform_later / set(wait:)): the
 // job row and its ready or scheduled execution, in one transaction (the

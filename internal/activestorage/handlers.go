@@ -8,8 +8,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/s3"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -19,7 +19,7 @@ import (
 // An unknown id raises ActiveRecord::RecordNotFound, which production renders
 // as the public 404.
 func setBlob(c *web.Context, param string) *Blob {
-	id, ok := Verified(c.ParamS(param), "blob_id", time.Now())
+	id, ok := Verified(c.ParamS(param), "blob_id", clock.Now())
 	if !ok {
 		c.HeadBase(http.StatusNotFound)
 		return nil
@@ -50,7 +50,7 @@ func BlobRedirect(c *web.Context) {
 	if b == nil {
 		return
 	}
-	u, err := b.ServiceURL(c.ParamS("disposition"), requestBase(c), time.Now())
+	u, err := b.ServiceURL(c.ParamS("disposition"), requestBase(c), clock.Now())
 	if err != nil {
 		panic(err)
 	}
@@ -179,7 +179,7 @@ func download(c *web.Context, b *Blob) ([]byte, error) {
 
 // DiskShow ports ActiveStorage::DiskController#show.
 func DiskShow(c *web.Context) {
-	v, ok := VerifiedData(c.ParamS("encoded_key"), "blob_key", time.Now())
+	v, ok := VerifiedData(c.ParamS("encoded_key"), "blob_key", clock.Now())
 	key, _ := v.(*rb.Map)
 	if !ok || key == nil {
 		c.HeadFormat(http.StatusNotFound)
@@ -220,7 +220,7 @@ func DiskShow(c *web.Context) {
 // to the default (S3) service, so no Disk upload token is ever issued; any
 // token that does verify is handled like Rails.
 func DiskUpdate(c *web.Context) {
-	v, ok := VerifiedData(c.ParamS("encoded_token"), "blob_token", time.Now())
+	v, ok := VerifiedData(c.ParamS("encoded_token"), "blob_token", clock.Now())
 	token, _ := v.(*rb.Map)
 	if !ok || token == nil {
 		c.HeadBase(http.StatusNotFound)
@@ -242,7 +242,7 @@ func Representation(c *web.Context) {
 	if !representable(b.ContentTypeString()) {
 		panic(&web.StandardError{Class: "ActiveStorage::UnrepresentableError", Message: "Cannot represent blob with content type " + b.ContentTypeString()})
 	}
-	if _, ok := VerifiedData(c.ParamS("variation_key"), "variation", time.Now()); !ok {
+	if _, ok := VerifiedData(c.ParamS("variation_key"), "variation", clock.Now()); !ok {
 		c.HeadBase(http.StatusNotFound)
 		return
 	}

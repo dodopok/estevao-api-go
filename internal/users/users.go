@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/langs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -133,7 +134,7 @@ func (u *User) OnboardingCompleted() bool {
 
 // Premium ports premium? (production: MOCK_PREMIUM ignored).
 func (u *User) Premium() bool {
-	return u.PremiumExpiresAt != nil && u.PremiumExpiresAt.After(time.Now())
+	return u.PremiumExpiresAt != nil && u.PremiumExpiresAt.After(clock.Now())
 }
 
 // PreferredAudioVoice ports preferred_audio_voice.
@@ -145,7 +146,7 @@ func (u *User) PreferredAudioVoice() string {
 }
 
 // Now returns the current time truncated to Postgres precision.
-func Now() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }
+func Now() time.Time { return clock.Now().UTC().Truncate(time.Microsecond) }
 
 // DefaultPreferences is User::DEFAULT_PREFERENCES.
 func DefaultPreferences() *rb.Map {

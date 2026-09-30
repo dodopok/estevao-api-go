@@ -46,6 +46,9 @@ lines << "DELETE FROM user_onboardings WHERE user_id IN (SELECT id FROM users WH
 lines << "DELETE FROM users WHERE provider_uid LIKE 'difftest-au-%';"
 lines << "DELETE FROM audio_clips WHERE instructions_sha256 = 'difftest';"
 lines << "DELETE FROM audio_clip_customizations WHERE created_by = 'difftest';"
+# The scenarios own ids from 990001 up; keep the fixture's clips below them
+# however far earlier runs moved the sequence.
+lines << "SELECT setval('audio_clips_id_seq', GREATEST(1, (SELECT COALESCE(MAX(id), 0) FROM audio_clips WHERE id < 990000)));"
 lines << ""
 lines << "INSERT INTO users (provider_uid, email, name, preferences, premium_expires_at, current_streak, longest_streak, timezone, created_at, updated_at) VALUES"
 lines << " ('difftest-au-pt', 'au-pt@example.com', 'Audio', '{\"prayer_book_code\":\"loc_2015\",\"bible_version\":\"nvi\"}', '2099-01-01', 2, 5, 'America/Sao_Paulo', now(), now()),"

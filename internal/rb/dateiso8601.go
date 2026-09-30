@@ -3,8 +3,8 @@ package rb
 import (
 	"errors"
 	"strconv"
-	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/rx"
 )
 
@@ -38,7 +38,7 @@ func DateISO8601(s string) (YMD, error) {
 	if n := len(s); n > 128 {
 		return YMD{}, errors.New("string length (" + strconv.Itoa(n) + ") exceeds the limit 128")
 	}
-	return newByFrags(dateUnderscoreISO8601(s), time.Now())
+	return newByFrags(dateUnderscoreISO8601(s), clock.Now())
 }
 
 func compYear69(s string, y int64) int64 {

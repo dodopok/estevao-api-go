@@ -11,6 +11,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/audioadmin"
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/solidqueue"
 	"github.com/dodopok/estevao-api-go/internal/store"
@@ -316,7 +317,7 @@ type progressReporter struct {
 }
 
 func (r *progressReporter) call(ctx context.Context, g *audio.Generator) {
-	now := time.Now()
+	now := clock.Now()
 	if r.reported && g.GeneratedClips-r.lastClips < reporterClips && now.Sub(r.lastAt) < reporterInterval {
 		return
 	}
@@ -324,7 +325,7 @@ func (r *progressReporter) call(ctx context.Context, g *audio.Generator) {
 }
 
 func (r *progressReporter) sync(ctx context.Context, g *audio.Generator, p audioadmin.Progress) {
-	r.persist(ctx, g, p, time.Now())
+	r.persist(ctx, g, p, clock.Now())
 }
 
 func (r *progressReporter) persist(ctx context.Context, g *audio.Generator, p audioadmin.Progress, now time.Time) {
@@ -343,7 +344,7 @@ type prewarmStats struct {
 
 // toDate ports `value&.to_date || Date.current` for the start_date keyword.
 func toDate(v any) (civil.Date, error) {
-	today := civil.FromTime(time.Now().In(rb.AppZone))
+	today := civil.FromTime(clock.Now().In(rb.AppZone))
 	if v == nil {
 		return today, nil
 	}

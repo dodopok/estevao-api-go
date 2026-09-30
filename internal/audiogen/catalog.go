@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/audio"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/store"
@@ -85,7 +86,7 @@ func (u *UsageRecorder) writeBatch(ctx context.Context, batch []usageRecord) err
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	now := time.Now().UTC().Truncate(time.Microsecond)
+	now := clock.Now().UTC().Truncate(time.Microsecond)
 	var values []string
 	var args []any
 	for _, r := range batch {

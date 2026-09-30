@@ -14,11 +14,14 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
+	"github.com/dodopok/estevao-api-go/internal/observe"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
+	"github.com/dodopok/estevao-api-go/internal/runtimecfg"
 	"github.com/dodopok/estevao-api-go/internal/solidqueue"
 	"github.com/dodopok/estevao-api-go/internal/wiring"
 	"github.com/dodopok/estevao-api-go/internal/workers"
@@ -31,6 +34,15 @@ func main() {
 	flag.Parse()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
+	runtimecfg.Tune(logger)
+	if err := runtimecfg.Check(logger); err != nil {
+		logger.Error("configuration", "error", err.Error())
+		os.Exit(1)
+	}
+	if err := observe.Start(logger, "worker"); err != nil {
+		logger.Error("observability", "error", err.Error())
+	}
+	defer observe.Shutdown(5 * time.Second)
 	ctx := context.Background()
 	if err := db.Open(ctx, config.Get("DATABASE_URL"), int32(config.Int("DB_MAX_CONNS", 10))); err != nil {
 		logger.Error("database", "error", err)

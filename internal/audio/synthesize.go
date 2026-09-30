@@ -18,6 +18,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/integrations"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -306,11 +307,11 @@ func googleRateLimitDelay(res *response, attempts int) float64 {
 
 func (g *googleClient) post(ctx context.Context, payload *rb.Map) (*response, error) {
 	if !g.lastStart.IsZero() {
-		if remaining := googleRequestInterval - time.Since(g.lastStart); remaining > 0 {
+		if remaining := googleRequestInterval - clock.Since(g.lastStart); remaining > 0 {
 			g.sleep(ctx, remaining)
 		}
 	}
-	g.lastStart = time.Now()
+	g.lastStart = clock.Now()
 	token, err := g.token(ctx)
 	if err != nil {
 		return nil, err
@@ -446,7 +447,7 @@ func serviceAccountAssertion(email, privateKey, scope string) (string, bool) {
 		}
 		key = k1
 	}
-	now := time.Now()
+	now := clock.Now()
 	signed, err := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": email, "scope": scope, "aud": "https://oauth2.googleapis.com/token",
 		"iat": now.Unix(), "exp": now.Add(time.Hour).Unix(),

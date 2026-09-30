@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/integrations"
@@ -90,7 +91,7 @@ func accessToken(ctx context.Context) string {
 		}
 		key = k1
 	}
-	now := time.Now()
+	now := clock.Now()
 	assertion, err := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": creds.ClientEmail, "scope": "https://www.googleapis.com/auth/firebase.messaging", "aud": googleTokenURI,
 		"iat": now.Unix(), "exp": now.Add(time.Hour).Unix(),
@@ -329,7 +330,7 @@ func sendToUser(ctx context.Context, u *users.User, n *Notification, log *Log) (
 		return Response{Error: "FCM not configured. Set FIREBASE_CREDENTIALS or GOOGLE_APPLICATION_CREDENTIALS"}
 	}
 	rows, err := db.Q().Query(ctx, `SELECT token FROM fcm_tokens WHERE user_id = $1 AND (updated_at > $2)`, u.ID,
-		time.Now().Add(-60*24*time.Hour))
+		clock.Now().Add(-60*24*time.Hour))
 	must(err)
 	var tokens []string
 	for rows.Next() {

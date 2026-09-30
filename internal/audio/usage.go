@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/solidqueue"
@@ -49,7 +50,7 @@ func init() {
 					usages = append(usages, m)
 				}
 			}
-			return RecordUserUsage(ctx, int64(rb.ToI(e.Arg(0))), usages, time.Now())
+			return RecordUserUsage(ctx, int64(rb.ToI(e.Arg(0))), usages, clock.Now())
 		},
 	})
 }

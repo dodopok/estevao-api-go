@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dodopok/estevao-api-go/internal/audio"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
@@ -161,7 +162,7 @@ func summaryUncached(ctx context.Context) *rb.Map {
 	current := count(ctx, `SELECT COUNT(DISTINCT "audio_clips"."id") FROM "audio_clips" WHERE (`+CurrentProfileScope(ctx)+`)`)
 	stale := count(ctx, `SELECT COUNT(DISTINCT "audio_clips"."id") FROM "audio_clips" WHERE (`+StaleProfileScope(ctx)+`)`)
 	legacy := count(ctx, `SELECT COUNT(DISTINCT "audio_clips"."id") FROM "audio_clips" WHERE "audio_clips"."configuration_fingerprint" IS NULL`)
-	since := time.Now().Add(-7 * 24 * time.Hour)
+	since := clock.Now().Add(-7 * 24 * time.Hour)
 	recent := `"audio_clips"."kind" = $1 AND "audio_clips"."created_at" >= $2`
 	wq := WorkerQueue(ctx)
 	return rb.M(
@@ -241,7 +242,7 @@ func operationSummary(ctx context.Context) *rb.Map {
 	return rb.M(
 		"by_status", groupCount(ctx, `SELECT COUNT(*) AS "count_all", "audio_operations"."status" AS "audio_operations_status" FROM "audio_operations" GROUP BY "audio_operations"."status"`),
 		"by_kind", groupCount(ctx, `SELECT COUNT(*) AS "count_all", "audio_operations"."kind" AS "audio_operations_kind" FROM "audio_operations" GROUP BY "audio_operations"."kind"`),
-		"failed_last_24_hours", count(ctx, `SELECT COUNT(*) FROM "audio_operations" WHERE "audio_operations"."status" = $1 AND "audio_operations"."completed_at" >= $2`, "failed", time.Now().Add(-24*time.Hour)),
+		"failed_last_24_hours", count(ctx, `SELECT COUNT(*) FROM "audio_operations" WHERE "audio_operations"."status" = $1 AND "audio_operations"."completed_at" >= $2`, "failed", clock.Now().Add(-24*time.Hour)),
 		"last_completed_at", timeOrNil(last))
 }
 
@@ -586,7 +587,7 @@ func classified(ctx context.Context) []classifiedJob {
 	ready, scheduled := idSet(ctx, "solid_queue_ready_executions", ids), idSet(ctx, "solid_queue_scheduled_executions", ids)
 	blocked, failed := idSet(ctx, "solid_queue_blocked_executions", ids), idSet(ctx, "solid_queue_failed_executions", ids)
 	live := map[int64]bool{}
-	prows, err := db.Q().Query(ctx, `SELECT id FROM solid_queue_processes WHERE last_heartbeat_at >= $1`, time.Now().Add(-5*time.Minute))
+	prows, err := db.Q().Query(ctx, `SELECT id FROM solid_queue_processes WHERE last_heartbeat_at >= $1`, clock.Now().Add(-5*time.Minute))
 	must(err)
 	for prows.Next() {
 		var id int64

@@ -2,11 +2,11 @@ package v1
 
 import (
 	"slices"
-	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/audio"
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/billing"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/features"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/store"
@@ -52,7 +52,7 @@ func SubscriptionsPremiumStatus(c *web.Context) {
 		"premium", u.Premium(),
 		"expires_at", timeOrNil(u.PremiumExpiresAt),
 		"preferred_voice", u.PreferredAudioVoice(),
-		"features", features.ForUser(c.Ctx, u, u.Premium(), time.Now()),
+		"features", features.ForUser(c.Ctx, u, u.Premium(), clock.Now()),
 		"available_voices", voiceInfo(false, ""),
 	))
 }
@@ -82,7 +82,7 @@ func AudioURL(c *web.Context) {
 	auth.AuthenticateRequired(c)
 	auth.RequirePremium(c)
 	u := auth.CurrentUser(c)
-	if !features.EnabledFor(c.Ctx, "daily_office_audio", u, u != nil && u.Premium(), time.Now()) {
+	if !features.EnabledFor(c.Ctx, "daily_office_audio", u, u != nil && u.Premium(), clock.Now()) {
 		c.RenderJSON(403, rb.M("error", "Audio feature is not enabled for this user", "code", "FEATURE_NOT_AVAILABLE",
 			"feature", "daily_office_audio"))
 	}

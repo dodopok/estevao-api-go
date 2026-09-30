@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -71,6 +72,9 @@ type Server struct {
 	Logger *slog.Logger
 	// ReportError receives unexpected failures (the New Relic hook).
 	ReportError func(c *Context, err any, stack []byte)
+	// Observe runs after every routed endpoint with the time it took (the
+	// New Relic hook: transaction name, custom attributes and metrics).
+	Observe func(c *Context, ep Endpoint, elapsed time.Duration)
 }
 
 var defaultHeaders = [][2]string{
@@ -95,7 +99,7 @@ func newUUID() string {
 // ServeHTTP runs the stack: Cors > SSL > Runtime > RequestId >
 // ShowExceptions > Head > ConditionalGet > ETag > Attack > routes.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
+	start := clock.Now()
 	if s.CORS != nil {
 		if resp := s.CORS.Preflight(r); resp != nil {
 			writeResponse(w, r, resp)
@@ -123,7 +127,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	resp := s.showExceptions(r, reqID)
 	if !resp.Live || resp.KeepIDs || resp.Status == 304 {
 		resp.Header.Set("X-Request-Id", reqID)
-		resp.Header.Set("X-Runtime", fmt.Sprintf("%0.6f", time.Since(start).Seconds()))
+		resp.Header.Set("X-Runtime", fmt.Sprintf("%0.6f", clock.Since(start).Seconds()))
 	}
 	resp.Header.Set("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	if s.CORS != nil {
@@ -288,6 +292,7 @@ func (s *Server) inner(r *http.Request, reqID string) *Response {
 }
 
 func (s *Server) dispatch(r *http.Request, reqID string, m *Match, ep Endpoint) *Response {
+	start := clock.Now()
 	controller, action, _ := strings.Cut(m.Endpoint, "#")
 	c := &Context{
 		R:          r,
@@ -313,6 +318,9 @@ func (s *Server) dispatch(r *http.Request, reqID string, m *Match, ep Endpoint) 
 		c.Header.Set("X-Request-Id", reqID)
 	}
 	s.run(c, ep)
+	if s.Observe != nil {
+		s.Observe(c, ep, clock.Since(start))
+	}
 	// ActionDispatch::Response#handle_conditional_get!: a response that
 	// already carries a validator defaults to must-revalidate (Rack::ETag
 	// would otherwise say no-cache).

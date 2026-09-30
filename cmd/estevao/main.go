@@ -10,6 +10,7 @@
 //	estevao db new <name>     create db/migrations/<version>_<name>.sql
 //	estevao db dump           rewrite db/schema.sql from DATABASE_URL (needs pg_dump)
 //	estevao seed load|sync|export ...
+//	estevao bible|flags|cache|books|notifications ...   operations (rake tasks)
 package main
 
 import (
@@ -27,6 +28,16 @@ func main() {
 		err = dbCommand(os.Args[2:])
 	case "seed":
 		err = seedCommand(os.Args[2:])
+	case "bible":
+		err = bibleCommand(os.Args[2:])
+	case "flags":
+		err = flagsCommand(os.Args[2:])
+	case "cache":
+		err = cacheCommand(os.Args[2:])
+	case "books":
+		err = booksCommand(os.Args[2:])
+	case "notifications":
+		err = notificationsCommand(os.Args[2:])
 	case "-h", "--help", "help":
 		usage()
 	default:
@@ -52,6 +63,15 @@ func usage() {
   seed sync [-dir seeds] [-book CODE] [-apply]
                                        reconcile a live database with seeds/ (report only without -apply)
   seed export [-dir seeds]             write seeds/ from DATABASE_URL
+  bible export -translation CODE [-o FILE]
+  bible import -file FILE [-replace]   load a translation file (replaces rake bible:*)
+  bible stats
+  flags list | enable|disable|reset FEATURE [global | user TARGET]
+                                       TARGET: e-mail, uid:<firebase uid> or id:<user id>
+  cache clear [-pattern GLOB]          clear the Go caches (go/*), keeping rate limits and usage counters
+  cache warm                           enqueue CacheWarmerJob
+  books touch CODE...                  retire the caches of prayer books
+  notifications test EMAIL             send a test push to a user
 
 DATABASE_URL selects the database.`)
 	os.Exit(2)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/solidqueue"
@@ -37,7 +38,7 @@ func Status(ctx context.Context, o *Operation) *rb.Map {
 // the in-memory Active Record object does.
 func EnqueueOperation(ctx context.Context, kind string, parameters *rb.Map, prayerBookCode any, requestedBy string,
 	job func(operationID int64) solidqueue.Job) (*Operation, error) {
-	now := time.Now().UTC().Truncate(time.Microsecond)
+	now := clock.Now().UTC().Truncate(time.Microsecond)
 	o := &Operation{Kind: kind, Status: "queued", Parameters: rb.JSON(parameters), Result: []byte("{}"), CreatedAt: now}
 	if prayerBookCode != nil {
 		s := rb.ToS(prayerBookCode)
@@ -55,7 +56,7 @@ func EnqueueOperation(ctx context.Context, kind string, parameters *rb.Map, pray
 	if err == nil {
 		o.ActiveJobID = &enq.ActiveJobID
 		_, err = db.Q().Exec(ctx, `UPDATE audio_operations SET active_job_id = $2, updated_at = $3 WHERE id = $1`,
-			o.ID, enq.ActiveJobID, time.Now().UTC())
+			o.ID, enq.ActiveJobID, clock.Now().UTC())
 	}
 	if err != nil {
 		MarkFailed(ctx, o.ID, solidqueue.ClassOf(err), err.Error())
@@ -68,7 +69,7 @@ func EnqueueOperation(ctx context.Context, kind string, parameters *rb.Map, pray
 
 // MarkRunning ports mark_running!.
 func MarkRunning(ctx context.Context, id int64) {
-	t := time.Now().UTC()
+	t := clock.Now().UTC()
 	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'running', started_at = COALESCE(started_at, $2),
 		updated_at = CASE WHEN status <> 'running' OR started_at IS NULL THEN $2 ELSE updated_at END WHERE id = $1`, id, t)
 }
@@ -89,7 +90,7 @@ func UpdateProgress(ctx context.Context, id int64, p Progress) error {
 			IS DISTINCT FROM (COALESCE($2, processed_items), COALESCE($3, total_items), COALESCE($4, generated_clips),
 			COALESCE($5, skipped_clips), COALESCE($6, failed_items), COALESCE($7, generated_characters))
 			THEN $8 ELSE updated_at END WHERE id = $1`,
-		id, p.Processed, p.Total, p.Generated, p.Skipped, p.Failed, p.Characters, time.Now().UTC())
+		id, p.Processed, p.Total, p.Generated, p.Skipped, p.Failed, p.Characters, clock.Now().UTC())
 	return err
 }
 
@@ -100,7 +101,7 @@ func MarkCompleted(ctx context.Context, id int64, p Progress, result *rb.Map) er
 		return err
 	}
 	_, err := db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'completed', completed_at = $2, result = $3::jsonb, updated_at = $2 WHERE id = $1`,
-		id, time.Now().UTC(), string(rb.JSON(result)))
+		id, clock.Now().UTC(), string(rb.JSON(result)))
 	return err
 }
 
@@ -108,13 +109,13 @@ func MarkCompleted(ctx context.Context, id int64, p Progress, result *rb.Map) er
 func MarkFailed(ctx context.Context, id int64, class, message string) {
 	msg := class + ": " + message
 	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET status = 'failed', completed_at = $2, error_message = $3, updated_at = $2 WHERE id = $1`,
-		id, time.Now().UTC(), msg)
+		id, clock.Now().UTC(), msg)
 }
 
 // SetParameter merges one key into parameters (operation.update!(parameters: ...merge)).
 func SetParameter(ctx context.Context, id int64, key string, value any) {
 	_, _ = db.Q().Exec(ctx, `UPDATE audio_operations SET parameters = COALESCE(parameters, '{}'::jsonb) || jsonb_build_object($2::text, $3::jsonb),
-		updated_at = $4 WHERE id = $1`, id, key, string(rb.JSON(value)), time.Now().UTC())
+		updated_at = $4 WHERE id = $1`, id, key, string(rb.JSON(value)), clock.Now().UTC())
 }
 
 // --- WorkerQueue.purge -----------------------------------------------------------
@@ -158,7 +159,7 @@ func PurgeWorkerQueue(ctx context.Context, scope string) *rb.Map {
 				opIDs = append(opIDs, id)
 			}
 			rows.Close()
-			t := time.Now().UTC()
+			t := clock.Now().UTC()
 			for _, id := range opIDs {
 				if _, err := tx.Exec(ctx, `UPDATE audio_operations SET status = 'cancelled', completed_at = COALESCE(completed_at, $2),
 					error_message = 'job removed from the worker queue', updated_at = $2 WHERE id = $1`, id, t); err != nil {

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"regexp"
 	"strconv"
-	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/features"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -21,7 +21,7 @@ func UsersWrappedShow(c *web.Context) {
 	u := auth.CurrentUser(c)
 	fail := func(code string, status int) { c.JSON(status, rb.M("error", rb.M("code", code))) }
 	raw := rb.ToS(c.Param("year"))
-	now := time.Now()
+	now := clock.Now()
 	if !fourDigits.MatchString(raw) {
 		fail("INVALID_YEAR", 400)
 		return

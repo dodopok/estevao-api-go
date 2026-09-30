@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/books"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/perplexity"
 	"github.com/dodopok/estevao-api-go/internal/prayerrequests"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -27,7 +27,7 @@ func prayerRequestsFilters(c *web.Context) *users.User {
 }
 
 func todayYMD(u *users.User) rb.YMD {
-	y, m, d := userToday(u, time.Now())
+	y, m, d := userToday(u, clock.Now())
 	return rb.YMD{Y: int64(y), M: int64(m), D: int64(d)}
 }
 

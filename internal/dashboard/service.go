@@ -6,6 +6,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/audioadmin"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
 )
@@ -70,7 +71,7 @@ func Call(ctx context.Context, start, end civil.Date, sections []string) *rb.Map
 	for _, s := range sections {
 		key := "dashboard/" + s + "/" + start.ISO() + "/" + end.ISO()
 		raw := rediscache.FetchJSON(ctx, key, 10*time.Minute, func() []byte {
-			p := &Period{Ctx: ctx, Start: start, End: end, Now: time.Now()}
+			p := &Period{Ctx: ctx, Start: start, End: end, Now: clock.Now()}
 			return rb.JSON(p.section(s))
 		})
 		v, err := rb.ParseJSON(raw)

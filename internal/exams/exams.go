@@ -15,6 +15,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/ar"
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -265,7 +266,7 @@ func replaceDots(s string) string {
 
 // --- dates ------------------------------------------------------------------------
 
-func today() civil.Date { return civil.FromTime(time.Now().In(rb.AppZone)) }
+func today() civil.Date { return civil.FromTime(clock.Now().In(rb.AppZone)) }
 
 // addMonths ports Date#>> (the day clamps to the end of the month).
 func addMonths(d civil.Date, n int) civil.Date {

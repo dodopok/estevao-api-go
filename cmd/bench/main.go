@@ -27,6 +27,8 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 type endpoint struct {
@@ -68,7 +70,7 @@ func get(base string, e endpoint) (int, [32]byte, time.Duration, error) {
 	for k, v := range headers(e.v2) {
 		req.Header.Set(k, v)
 	}
-	start := time.Now()
+	start := clock.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		return 0, [32]byte{}, 0, err
@@ -77,7 +79,7 @@ func get(base string, e endpoint) (int, [32]byte, time.Duration, error) {
 	resp.Body.Close()
 	// meta.generated_at (API v2) is the second the response was built.
 	body = generatedAt.ReplaceAll(body, []byte(`"generated_at":""`))
-	return resp.StatusCode, sha256.Sum256(body), time.Since(start), err
+	return resp.StatusCode, sha256.Sum256(body), clock.Since(start), err
 }
 
 type result struct {
@@ -98,15 +100,15 @@ func load(base string, e endpoint, concurrency int, duration time.Duration) resu
 	var mu sync.Mutex
 	var all []time.Duration
 	var errs int64
-	deadline := time.Now().Add(duration)
-	start := time.Now()
+	deadline := clock.Now().Add(duration)
+	start := clock.Now()
 	var wg sync.WaitGroup
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			var local []time.Duration
-			for time.Now().Before(deadline) {
+			for clock.Now().Before(deadline) {
 				status, _, d, err := get(base, e)
 				if err != nil || status != 200 {
 					atomic.AddInt64(&errs, 1)
@@ -121,7 +123,7 @@ func load(base string, e endpoint, concurrency int, duration time.Duration) resu
 	}
 	wg.Wait()
 	sort.Slice(all, func(i, j int) bool { return all[i] < all[j] })
-	return result{count: len(all), errors: errs, latencies: all, elapsed: time.Since(start)}
+	return result{count: len(all), errors: errs, latencies: all, elapsed: clock.Since(start)}
 }
 
 func ms(d time.Duration) string { return fmt.Sprintf("%.1f", float64(d.Microseconds())/1000) }

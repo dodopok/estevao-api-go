@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/prefs"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -115,7 +116,7 @@ func SharedOfficesCreate(c *web.Context) {
 	office := rb.ToS(p.Get("office_type"))
 	var userID any
 	userCond := ""
-	args := []any{date.ISO(), office, *codeS, seed, prefsJSON, time.Now().UTC()}
+	args := []any{date.ISO(), office, *codeS, seed, prefsJSON, clock.Now().UTC()}
 	if u != nil {
 		userID = u.ID
 		userCond = " AND user_id = $7"

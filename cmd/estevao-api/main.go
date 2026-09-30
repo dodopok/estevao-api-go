@@ -15,13 +15,23 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/app"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
+	"github.com/dodopok/estevao-api-go/internal/observe"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
+	"github.com/dodopok/estevao-api-go/internal/runtimecfg"
 	"github.com/dodopok/estevao-api-go/internal/solidqueue"
 	"github.com/dodopok/estevao-api-go/internal/workers"
 )
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	runtimecfg.Tune(logger)
+	if err := runtimecfg.Check(logger); err != nil {
+		logger.Error("configuration", "error", err.Error())
+		os.Exit(1)
+	}
+	if err := observe.Start(logger, "web"); err != nil {
+		logger.Error("observability", "error", err.Error())
+	}
 	ctx := context.Background()
 	if err := db.Open(ctx, config.Get("DATABASE_URL"), int32(config.Int("DB_MAX_CONNS", 20))); err != nil {
 		logger.Error("database", "error", err)
@@ -33,10 +43,18 @@ func main() {
 			os.Exit(1)
 		}
 	}
+	server := app.NewServer(logger, config.PresenceOr("PUBLIC_DIR", "public"))
+	observe.Install(server)
+	handler := observe.Middleware(server)
 	srv := &http.Server{
 		Addr:              ":" + config.PresenceOr("PORT", "3000"),
-		Handler:           app.NewServer(logger, config.PresenceOr("PUBLIC_DIR", "public")),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
+		// The whole request, body included (avatar uploads), and idle
+		// keep-alive connections, which must outlive the edge proxy's own
+		// idle timeout so it never reuses a connection being closed.
+		ReadTimeout: 60 * time.Second,
+		IdleTimeout: 75 * time.Second,
 	}
 	// config/puma.rb: `plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]` -
 	// any value, even "false", runs the jobs inside the web process.
@@ -75,4 +93,5 @@ func main() {
 	_ = srv.Shutdown(shutdownCtx)
 	stopJobs()
 	<-jobsDone
+	observe.Shutdown(5 * time.Second)
 }

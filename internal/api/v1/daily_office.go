@@ -2,15 +2,18 @@ package v1
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/dailyoffice"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/features"
+	"github.com/dodopok/estevao-api-go/internal/metrics"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/store"
 	"github.com/dodopok/estevao-api-go/internal/users"
@@ -120,7 +123,7 @@ func renderOffice(c *web.Context, r *resolver, date civil.Date, officeType strin
 	response := fetchOffice(c, r, date, officeType, prefs)
 	user := auth.CurrentUser(c)
 	premium := user != nil && user.Premium()
-	now := time.Now()
+	now := clock.Now()
 	if features.EnabledFor(c.Ctx, "daily_office_audio", user, premium, now) {
 		response = addAudioTrack(c, r, response, user)
 	}
@@ -183,14 +186,28 @@ func fetchOffice(c *web.Context, r *resolver, date civil.Date, officeType string
 		prefs = prefs.Dup()
 		prefs.Set("office_type", "traditional")
 	}
+	started := time.Now()
 	svc := dailyoffice.NewService(c.Ctx, date, officeType, prefs)
 	base := svc.Base(c.Ctx)
 	user := auth.CurrentUser(c)
+	recordServiceTiming(svc, officeType, user != nil, time.Since(started))
 	premium := user != nil && user.Premium()
-	if !features.EnabledFor(c.Ctx, "daily_office_audio", user, premium, time.Now()) {
+	if !features.EnabledFor(c.Ctx, "daily_office_audio", user, premium, clock.Now()) {
 		return dailyoffice.RemoveAudioData(base).(*rb.Map)
 	}
 	return addAudioURLs(c.Ctx, base, svc, user, officeType)
+}
+
+// recordServiceTiming ports DailyOfficeService#record_service_timing.
+func recordServiceTiming(svc *dailyoffice.Service, officeType string, hasUser bool, elapsed time.Duration) {
+	ms := math.Round(float64(elapsed.Microseconds())/10) / 100
+	who := "no_user"
+	if hasUser {
+		who = "with_user"
+	}
+	metrics.Record("DailyOffice/Service/"+rb.ToS(svc.Prefs.Get("prayer_book_code"))+"/Duration", ms)
+	metrics.Record("DailyOffice/Service/"+officeType+"/Duration", ms)
+	metrics.Record("DailyOffice/Service/"+who+"/Duration", ms)
 }
 
 // addAudioURLs ports add_audio_urls_to_response.

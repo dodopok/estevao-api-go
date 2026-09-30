@@ -15,6 +15,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 )
 
@@ -86,7 +87,7 @@ func adminAccessToken(ctx context.Context) (string, error) {
 			return "", err
 		}
 	}
-	now := time.Now()
+	now := clock.Now()
 	assertion, err := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": email, "scope": "https://www.googleapis.com/auth/identitytoolkit", "aud": oauthTokenURL(),
 		"iat": now.Unix(), "exp": now.Add(time.Hour).Unix(),

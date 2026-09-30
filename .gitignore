@@ -5,3 +5,5 @@ coverage.out
 /tmp/
 /difftest
 /bench
+/test/corpus/recording/
+/test/corpus/*/database.dump

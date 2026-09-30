@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"net/http"
 	"strconv"
-	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/test/diff"
 )
 
@@ -60,7 +60,7 @@ func init() {
 			`SELECT id, rate_limit_multiplier, billing_active FROM api_keys WHERE developer_id BETWEEN 990001 AND 990099 ORDER BY id`,
 			`SELECT event_id, event_type, processed_at IS NOT NULL FROM stripe_webhook_events WHERE event_id LIKE 'evt_difftest_%' ORDER BY event_id`,
 		}
-		now := time.Now().Unix()
+		now := clock.Now().Unix()
 		hook := func(name, payload, signature, contentType string) diff.Request {
 			return diff.Request{Name: name, Method: "POST", Path: "/api/v1/webhooks/stripe", Body: payload,
 				Headers: map[string]string{"Content-Type": contentType, "Stripe-Signature": signature, "Host": "api.example.test"}}

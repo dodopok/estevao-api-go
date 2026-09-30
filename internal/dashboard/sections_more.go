@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rosary"
@@ -505,7 +506,7 @@ func (p *Period) API() *rb.Map {
 			limit = n
 		}
 	}
-	today := civil.FromTime(time.Now().In(rb.AppZone))
+	today := civil.FromTime(clock.Now().In(rb.AppZone))
 	todayUsage := p.sums(`SELECT SUM("api_key_usage_logs"."requests_count") AS "sum_requests_count", "api_key_usage_logs"."api_key_id" AS "api_key_usage_logs_api_key_id" FROM "api_key_usage_logs" WHERE "api_key_usage_logs"."date" = $1 GROUP BY "api_key_usage_logs"."api_key_id"`, today.ISO())
 	sortStable(daily, func(a, b pair) bool { return hashKey(a.Keys[0]) < hashKey(b.Keys[0]) })
 	byDay := []any{}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -261,7 +262,7 @@ func (s *scheduler) persist(ctx context.Context) error {
 func (s *scheduler) run(ctx, base context.Context) {
 	pending := map[string]time.Time{}
 	for _, t := range s.tasks {
-		pending[t.Key] = s.crons[t.Key].Next(time.Now())
+		pending[t.Key] = s.crons[t.Key].Next(clock.Now())
 	}
 	for {
 		var soonest time.Time
@@ -277,11 +278,11 @@ func (s *scheduler) run(ctx, base context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(time.Until(soonest)):
+		case <-time.After(soonest.Sub(clock.Now())):
 		}
 		for _, t := range s.tasks {
 			at := pending[t.Key]
-			if at.After(time.Now()) {
+			if at.After(clock.Now()) {
 				continue
 			}
 			pending[t.Key] = s.crons[t.Key].Next(at)

@@ -21,6 +21,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 // Request is one HTTP call of a scenario.
@@ -301,7 +303,7 @@ func Token(keyPath, projectID string, claims map[string]any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	now := time.Now().Unix()
+	now := clock.Now().Unix()
 	c := jwt.MapClaims{
 		"iss": "https://securetoken.google.com/" + projectID,
 		"aud": projectID,

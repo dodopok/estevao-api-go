@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/dodopok/estevao-api-go/internal/ar"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"log/slog"
 	"sort"
 	"strconv"
@@ -294,7 +295,7 @@ func publish(ctx context.Context, id int64) error {
 				return nil
 			}
 			if p.Get("publication_status") == "publishing" && same && p.Get("publication_started_at") != nil {
-				if started := p.Get("publication_started_at").(time.Time); !started.Before(time.Now().Add(-staleAfterPublish)) {
+				if started := p.Get("publication_started_at").(time.Time); !started.Before(clock.Now().Add(-staleAfterPublish)) {
 					return nil
 				}
 			}

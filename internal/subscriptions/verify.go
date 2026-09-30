@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/features"
 	"github.com/dodopok/estevao-api-go/internal/rb"
@@ -53,7 +54,7 @@ func Verify(ctx context.Context, u *users.User, rcID string) *rb.Map {
 		panic(err)
 	}
 	response := parsed.(*rb.Map)
-	response.Set("features", features.ForUser(ctx, actor, response.Get("premium") == true, time.Now()))
+	response.Set("features", features.ForUser(ctx, actor, response.Get("premium") == true, clock.Now()))
 	return response
 }
 

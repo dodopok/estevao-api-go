@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -27,7 +28,7 @@ type APIKeyRecord struct {
 
 // Usable ports ApiKey#usable?.
 func (k *APIKeyRecord) Usable() bool {
-	expired := k.ExpiresAt != nil && k.ExpiresAt.Before(time.Now())
+	expired := k.ExpiresAt != nil && k.ExpiresAt.Before(clock.Now())
 	return k.Active && k.BillingActive && !expired
 }
 
@@ -92,7 +93,7 @@ func RecordAPIKeyUsage(c *web.Context, controllerName string) {
 		return
 	}
 	endpoint := controllerName + "#" + c.Action
-	date := time.Now().In(appZone()).Format("2006-01-02")
+	date := clock.Now().In(appZone()).Format("2006-01-02")
 	key := "v8/api_key_usage/counter/" + itoa(k.ID) + "/" + date + "/" + base64.RawURLEncoding.EncodeToString([]byte(endpoint))
 	rediscache.Increment(c.Ctx, key, 1, 48*time.Hour)
 }
@@ -110,7 +111,7 @@ func RateLimitMultiplierFor(ctx context.Context, value string) int {
 	failed := false
 	raw := rediscache.FetchJSON(ctx, multiplierCacheKey, 5*time.Minute, func() []byte {
 		rows, err := db.Q().Query(ctx, `SELECT key, rate_limit_multiplier, expires_at FROM api_keys
-			WHERE active = TRUE AND billing_active = TRUE AND (expires_at IS NULL OR expires_at > $1)`, time.Now().UTC())
+			WHERE active = TRUE AND billing_active = TRUE AND (expires_at IS NULL OR expires_at > $1)`, clock.Now().UTC())
 		if err != nil {
 			failed = true
 			return nil
@@ -138,7 +139,7 @@ func RateLimitMultiplierFor(ctx context.Context, value string) int {
 	}
 	sum := sha256.Sum256([]byte(value))
 	e, ok := byHash[hex.EncodeToString(sum[:])]
-	if !ok || e.Multiplier == 0 || (e.ExpiresAt != nil && !e.ExpiresAt.After(time.Now())) {
+	if !ok || e.Multiplier == 0 || (e.ExpiresAt != nil && !e.ExpiresAt.After(clock.Now())) {
 		return 1
 	}
 	return e.Multiplier

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/integrations"
@@ -153,7 +154,7 @@ func UpdateUserPremiumStatus(ctx context.Context, u *users.User) {
 		return
 	}
 	previous := u.PremiumExpiresAt
-	now := time.Now()
+	now := clock.Now()
 	var sub *info
 	if body, found := subscriber(ctx, key, *u.RevenueCatUserID); found {
 		sub = parse(body, now)

@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dodopok/estevao-api-go/internal/billing"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/users"
@@ -93,7 +94,7 @@ func StartCheckout(ctx context.Context, d *Developer, planCode, interval, curren
 		}
 		pending := CheckoutSessionOf(ctx, tx, d.ID)
 		if pending != nil {
-			if !pending.ExpiresAt.After(time.Now()) {
+			if !pending.ExpiresAt.After(clock.Now()) {
 				if _, err := tx.Exec(ctx, `DELETE FROM developer_checkout_sessions WHERE id = $1`, pending.ID); err != nil {
 					return err
 				}
@@ -123,7 +124,7 @@ func StartCheckout(ctx context.Context, d *Developer, planCode, interval, curren
 				trial = 0
 			}
 			pending = &CheckoutSession{IdempotencyKey: uuid(), PlanCode: plan.Code, Interval: iv, Currency: cur,
-				TrialPeriodDays: trial, ExpiresAt: time.Now().Add(31 * time.Minute).Truncate(time.Microsecond)}
+				TrialPeriodDays: trial, ExpiresAt: clock.Now().Add(31 * time.Minute).Truncate(time.Microsecond)}
 			now := users.Now()
 			if err := tx.QueryRow(ctx, `INSERT INTO developer_checkout_sessions (developer_id, idempotency_key, plan_code, interval,
 				currency, trial_period_days, expires_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8) RETURNING id`,

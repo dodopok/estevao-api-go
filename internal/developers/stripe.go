@@ -17,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/integrations"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -255,7 +256,7 @@ func VerifySignature(payload []byte, header string) string {
 	if ts == nil || len(sigs) == 0 {
 		return "Malformed signature"
 	}
-	if d := time.Now().Unix() - *ts; d > 300 || d < -300 {
+	if d := clock.Now().Unix() - *ts; d > 300 || d < -300 {
 		return "Signature timestamp outside tolerance"
 	}
 	mac := hmac.New(sha256.New, []byte(secret))

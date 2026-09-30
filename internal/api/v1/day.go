@@ -8,6 +8,7 @@ import (
 
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/collects"
 	"github.com/dodopok/estevao-api-go/internal/liturgical"
 	"github.com/dodopok/estevao-api-go/internal/prefs"
@@ -20,7 +21,7 @@ import (
 
 // today ports Date.current in the application time zone.
 func today() civil.Date {
-	return civil.FromTime(time.Now().In(rb.AppZone))
+	return civil.FromTime(clock.Now().In(rb.AppZone))
 }
 
 // CalendarToday ports CalendarController#today.

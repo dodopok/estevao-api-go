@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dodopok/estevao-api-go/internal/audio"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
@@ -92,7 +93,7 @@ func AcceptCandidate(ctx context.Context, cand *Candidate) (*Clip, error) {
 			return err
 		}
 		source := FindClip(ctx, cand.AudioClipID)
-		now := time.Now().UTC().Truncate(time.Microsecond)
+		now := clock.Now().UTC().Truncate(time.Microsecond)
 		var id int64
 		err = tx.QueryRow(ctx, `INSERT INTO audio_clips (key, filename, text, line_type, kind, provider, voice, model, speed, duration,
 			character_count, language, instructions_sha256, configuration_fingerprint, custom_instructions_sha256, created_at, updated_at)
@@ -175,7 +176,7 @@ func AcceptCandidate(ctx context.Context, cand *Candidate) (*Clip, error) {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `UPDATE audio_clip_candidates SET status = 'rejected', updated_at = $3
-			WHERE audio_clip_id = $1 AND status = 'pending' AND id <> $2`, cand.AudioClipID, cand.ID, time.Now().UTC()); err != nil {
+			WHERE audio_clip_id = $1 AND status = 'pending' AND id <> $2`, cand.AudioClipID, cand.ID, clock.Now().UTC()); err != nil {
 			return err
 		}
 		replacement = FindClip(ctx, id)
@@ -195,7 +196,7 @@ func RejectCandidate(ctx context.Context, cand *Candidate) error {
 		if err := storage.Delete(ctx, locked.Filename); err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, `UPDATE audio_clip_candidates SET status = 'rejected', updated_at = $2 WHERE id = $1`, locked.ID, time.Now().UTC())
+		_, err = tx.Exec(ctx, `UPDATE audio_clip_candidates SET status = 'rejected', updated_at = $2 WHERE id = $1`, locked.ID, clock.Now().UTC())
 		return err
 	})
 }

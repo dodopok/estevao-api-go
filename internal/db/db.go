@@ -16,6 +16,9 @@ import (
 // Pool is the process-wide pool, set by Open.
 var Pool *pgxpool.Pool
 
+// Tracer, when set before Open, traces every query (New Relic segments).
+var Tracer pgx.QueryTracer
+
 // Open connects using a DATABASE_URL-style DSN.
 func Open(ctx context.Context, dsn string, maxConns int32) error {
 	cfg, err := pgxpool.ParseConfig(dsn)
@@ -38,6 +41,9 @@ func Open(ctx context.Context, dsn string, maxConns int32) error {
 	cfg.ConnConfig.RuntimeParams["lock_timeout"] = "10000"
 	cfg.ConnConfig.RuntimeParams["idle_in_transaction_session_timeout"] = "60000"
 	cfg.ConnConfig.RuntimeParams["timezone"] = "UTC"
+	if Tracer != nil {
+		cfg.ConnConfig.Tracer = Tracer
+	}
 	p, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
 		return err

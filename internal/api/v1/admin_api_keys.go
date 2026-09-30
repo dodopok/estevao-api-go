@@ -12,6 +12,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/ar"
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/users"
@@ -66,7 +67,7 @@ func apiKeyPreview(key any) any {
 
 func apiKeyExpired(k *ar.Record) bool {
 	t, ok := k.Get("expires_at").(time.Time)
-	return ok && t.Before(time.Now())
+	return ok && t.Before(clock.Now())
 }
 
 func timeValue(v any) any {
@@ -245,8 +246,8 @@ func AdminAPIKeysUsage(c *web.Context) {
 // renderAPIKeyUsage ports the usage action shared by the admin and the
 // developer API key controllers.
 func renderAPIKeyUsage(c *web.Context, k *ar.Record) {
-	today := civil.FromTime(time.Now().In(rb.AppZone))
-	start := civil.FromTime(time.Now().In(rb.AppZone).Add(-30 * 24 * time.Hour))
+	today := civil.FromTime(clock.Now().In(rb.AppZone))
+	start := civil.FromTime(clock.Now().In(rb.AppZone).Add(-30 * 24 * time.Hour))
 	end := today
 	if d := usageDate(c.Param("start_date")); d != nil {
 		start = *d

@@ -16,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -209,6 +210,11 @@ type claimed struct {
 }
 
 // perform ports ClaimedExecution#perform around ActiveJob::Base.execute.
+// Instrument wraps every perform (the New Relic hook, like ApplicationJob's
+// around_perform): it may replace the context and is told how the perform
+// ended.
+var Instrument func(ctx context.Context, e *Execution) (context.Context, func(err error))
+
 func perform(ctx context.Context, c claimed) error {
 	err := execute(ctx, c)
 	if err == nil {
@@ -279,6 +285,10 @@ func execute(ctx context.Context, c claimed) (err error) {
 	}
 	serialArgs, _ := data.Get("arguments").([]any)
 	exec := &Execution{ID: c.jobID, Class: class, Data: data, Executions: executions, serialArgs: serialArgs, exceptionEx: ee}
+	var observed func(error)
+	if Instrument != nil {
+		ctx, observed = Instrument(ctx, exec)
+	}
 	runErr := func() (err error) {
 		defer func() {
 			if rec := recover(); rec != nil {
@@ -298,6 +308,11 @@ func execute(ctx context.Context, c claimed) (err error) {
 		}
 		return h.Perform(pctx, exec)
 	}()
+	if observed != nil {
+		// around_perform: it sees the exception even when a rescue_from
+		// below handles it.
+		observed(runErr)
+	}
 	if runErr == nil {
 		return nil
 	}
@@ -334,7 +349,7 @@ func retryJob(ctx context.Context, e *Execution, data *rb.Map, wait time.Duratio
 	}
 	_, err := Enqueue(ctx, Job{
 		Class: e.Class, Queue: rb.ToS(data.Get("queue_name")), Priority: priority, Arguments: e.serialArgs,
-		ScheduledAt: time.Now().Add(wait), JobID: rb.ToS(data.Get("job_id")), Executions: e.Executions,
+		ScheduledAt: clock.Now().Add(wait), JobID: rb.ToS(data.Get("job_id")), Executions: e.Executions,
 		ExceptionExecutions: e.exceptionEx, Locale: rb.ToS(data.Get("locale")), Timezone: rb.ToS(data.Get("timezone")),
 	})
 	return err
@@ -848,7 +863,8 @@ func PerformNow(ctx context.Context, class string, args ...any) error {
 		return &Error{Class: "NameError", Message: "uninitialized constant " + class}
 	}
 	serial := append([]any{}, args...)
-	return func() (err error) {
+	var observed func(error)
+	err := func() (err error) {
 		defer func() {
 			if rec := recover(); rec != nil {
 				err = panicError(rec)
@@ -864,7 +880,14 @@ func PerformNow(ctx context.Context, class string, args ...any) error {
 			return err
 		}
 		arguments, _ := deserialized.([]any)
-		return h.Perform(ctx, &Execution{Class: class, Arguments: arguments, Executions: 1, serialArgs: serialArgs,
-			exceptionEx: rb.NewMap()})
+		exec := &Execution{Class: class, Arguments: arguments, Executions: 1, serialArgs: serialArgs, exceptionEx: rb.NewMap()}
+		if Instrument != nil {
+			ctx, observed = Instrument(ctx, exec)
+		}
+		return h.Perform(ctx, exec)
 	}()
+	if observed != nil {
+		observed(err)
+	}
+	return err
 }

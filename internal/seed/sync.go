@@ -14,6 +14,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 // syncSpec says how Sync matches a table's dataset rows with its database
@@ -195,7 +197,7 @@ func Sync(ctx context.Context, pool *pgxpool.Pool, dir string, opts SyncOptions)
 			}
 		}
 	}
-	now := marshal(time.Now().UTC().Format("2006-01-02T15:04:05.999999"))
+	now := marshal(clock.Now().UTC().Format("2006-01-02T15:04:05.999999"))
 	for _, p := range plans {
 		t := p.t
 		for _, g := range p.groups {

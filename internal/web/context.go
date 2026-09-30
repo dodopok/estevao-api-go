@@ -6,8 +6,8 @@ import (
 	"mime"
 	"net/http"
 	"strings"
-	"time"
 
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 )
 
@@ -288,4 +288,4 @@ var extensionMimes = map[string]string{
 }
 
 // SetDate sets the Date header, as expires_in does.
-func (c *Context) SetDate() { c.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat)) }
+func (c *Context) SetDate() { c.Header.Set("Date", clock.Now().UTC().Format(http.TimeFormat)) }

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
@@ -147,7 +148,7 @@ func Middleware() web.Middleware {
 		if r.path == "/up" || r.path == "/ready" {
 			return nil
 		}
-		now := time.Now().Unix()
+		now := clock.Now().Unix()
 		for _, t := range throttles {
 			d := t.discrim(r)
 			if d == "" {
@@ -284,7 +285,7 @@ var memoryCounters = &memoryStore{entries: map[string]*memoryEntry{}}
 func (m *memoryStore) increment(key string, ttl time.Duration) int64 {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	now := time.Now()
+	now := clock.Now()
 	if now.Sub(m.sweep) > time.Minute {
 		for k, e := range m.entries {
 			if now.After(e.expires) {

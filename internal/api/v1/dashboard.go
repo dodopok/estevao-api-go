@@ -2,10 +2,10 @@ package v1
 
 import (
 	"strings"
-	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/auth"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/dashboard"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/web"
@@ -31,7 +31,7 @@ func dashboardDate(c *web.Context, name string, def civil.Date) (civil.Date, boo
 // DashboardIndex ports DashboardController#index.
 func DashboardIndex(c *web.Context) {
 	auth.AuthenticateAdmin(c)
-	today := civil.FromTime(time.Now().In(rb.AppZone))
+	today := civil.FromTime(clock.Now().In(rb.AppZone))
 	start, ok := dashboardDate(c, "start_date", today.Add(-30))
 	if !ok {
 		return

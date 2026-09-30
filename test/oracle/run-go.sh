@@ -5,6 +5,8 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 set -a; source "$DIR/oracle.env"; set +a
+# GO_DATABASE_URL points the Go stack elsewhere (test/corpus/replay.sh).
+export DATABASE_URL="${GO_DATABASE_URL:-$DATABASE_URL}"
 export REDIS_URL="${GO_REDIS_URL:-redis://localhost:6379/2}" PORT="${GO_PORT:-3001}"
 # The playground proxy calls APP_HOST (Rails' default is its own
 # http://localhost:3000); PLAYGROUND_PROXY_BASE_URL points Go's at itself

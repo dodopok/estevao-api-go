@@ -13,6 +13,7 @@ import (
 	"github.com/dodopok/estevao-api-go/internal/bgmusic"
 	"github.com/dodopok/estevao-api-go/internal/books"
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/config"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/features"
@@ -47,7 +48,7 @@ func withBackgroundMusic(action func(m *bgMusic)) web.HandlerFunc {
 		auth.AuthenticateRequired(c)
 		auth.RequirePremium(c)
 		u := auth.CurrentUser(c)
-		if !features.EnabledFor(c.Ctx, "background_music", u, u.Premium(), time.Now()) {
+		if !features.EnabledFor(c.Ctx, "background_music", u, u.Premium(), clock.Now()) {
 			c.RenderJSON(404, rb.M("error", "Background music is not available", "code", "FEATURE_DISABLED"))
 		}
 		action(&bgMusic{c: c, u: u, names: map[string]any{}})
@@ -113,7 +114,7 @@ func (m *bgMusic) date() civil.Date {
 		if loc == nil {
 			panic(&web.StandardError{Class: "ArgumentError", Message: "Invalid Timezone: " + m.u.Timezone})
 		}
-		value = civil.FromTime(time.Now().In(loc)).ISO()
+		value = civil.FromTime(clock.Now().In(loc)).ISO()
 	}
 	d, err := rb.DateISO8601(rb.ToS(value))
 	if err != nil {
@@ -534,7 +535,7 @@ var BackgroundMusicPlayback = withBackgroundMusic(func(m *bgMusic) {
 	if !strings.HasPrefix(asset.ObjectKey, "background_music/") || strings.Contains(asset.ObjectKey, "..") {
 		panic(&web.StandardError{Class: "ArgumentError", Message: "invalid background music object key"})
 	}
-	now := time.Now()
+	now := clock.Now()
 	expiresIn := bgURLExpiresIn()
 	base := asset.ObjectKey[strings.LastIndex(asset.ObjectKey, "/")+1:]
 	url, err := activestorage.ServiceObjectURL(bgStorageService(), asset.ObjectKey, int(expiresIn), base, "inline",

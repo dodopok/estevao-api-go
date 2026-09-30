@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/rx"
 )
 
@@ -23,7 +24,7 @@ func DateParse(s string, comp bool) (YMD, error) {
 	if n := len(s); n > 128 {
 		return YMD{}, errors.New("string length (" + strconv.Itoa(n) + ") exceeds the limit 128")
 	}
-	return dateParseAt(s, comp, time.Now())
+	return dateParseAt(s, comp, clock.Now())
 }
 
 func dateParseAt(s string, comp bool, now time.Time) (YMD, error) {

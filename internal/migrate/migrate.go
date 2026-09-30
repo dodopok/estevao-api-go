@@ -22,6 +22,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/dodopok/estevao-api-go/internal/clock"
 )
 
 // Baseline is the last Rails migration. A database that has it applied is
@@ -292,7 +294,7 @@ func (m *Migrator) Migrate(ctx context.Context) (applied int, err error) {
 			return err
 		}
 		for _, mig := range pending {
-			start := time.Now()
+			start := clock.Now()
 			if err := m.apply(ctx, mig.Up, mig.NoTransaction, func(q execer) error {
 				_, err := q.Exec(ctx, "INSERT INTO schema_migrations (version) VALUES ($1)", mig.Version)
 				return err
@@ -300,7 +302,7 @@ func (m *Migrator) Migrate(ctx context.Context) (applied int, err error) {
 				return fmt.Errorf("%s_%s: %w", mig.Version, mig.Name, err)
 			}
 			applied++
-			m.opts.Log("migrated %s_%s (%s)", mig.Version, mig.Name, time.Since(start).Round(time.Millisecond))
+			m.opts.Log("migrated %s_%s (%s)", mig.Version, mig.Name, clock.Since(start).Round(time.Millisecond))
 		}
 		return nil
 	})

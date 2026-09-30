@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/dodopok/estevao-api-go/internal/civil"
+	"github.com/dodopok/estevao-api-go/internal/clock"
 	"github.com/dodopok/estevao-api-go/internal/db"
 	"github.com/dodopok/estevao-api-go/internal/rb"
 	"github.com/dodopok/estevao-api-go/internal/rediscache"
@@ -33,7 +34,7 @@ func init() {
 	solidqueue.Register("DatabaseCleanupJob", solidqueue.Handler{Queue: "default", Perform: databaseCleanup})
 	solidqueue.Register("CleanupExpiredSharedOfficesJob", solidqueue.Handler{Queue: "default",
 		Perform: func(ctx context.Context, _ *solidqueue.Execution) error {
-			tag, err := db.Q().Exec(ctx, `DELETE FROM shared_offices WHERE expires_at <= $1`, time.Now().UTC())
+			tag, err := db.Q().Exec(ctx, `DELETE FROM shared_offices WHERE expires_at <= $1`, clock.Now().UTC())
 			if err == nil {
 				slog.Info("[CleanupExpiredSharedOfficesJob] Deleted " + strconv.FormatInt(tag.RowsAffected(), 10) + " expired shared offices")
 			}
@@ -153,11 +154,11 @@ func flushPending(ctx context.Context, r *redis.Client, key string) int {
 	applied := false
 	err := db.Transaction(ctx, func(ctx context.Context, tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, `INSERT INTO api_key_usage_flushes (id, created_at) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
-			parts[0], time.Now().UTC())
+			parts[0], clock.Now().UTC())
 		if err != nil || tag.RowsAffected() == 0 {
 			return err
 		}
-		t := time.Now().UTC()
+		t := clock.Now().UTC()
 		_, err = tx.Exec(ctx, `WITH updated_api_key AS (
 				UPDATE api_keys SET requests_count = COALESCE(requests_count, 0) + $1, last_used_at = $2 WHERE id = $3 RETURNING id)
 			INSERT INTO api_key_usage_logs (api_key_id, endpoint, date, requests_count, created_at, updated_at)
@@ -197,7 +198,7 @@ func deleteInBatches(ctx context.Context, table, where string, arg any) (int64, 
 
 // databaseCleanup ports DatabaseCleanupJob#perform.
 func databaseCleanup(ctx context.Context, _ *solidqueue.Execution) error {
-	now := time.Now().UTC()
+	now := clock.Now().UTC()
 	var total int64
 	for _, step := range []struct {
 		table, where, label string
