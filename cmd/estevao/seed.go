@@ -17,6 +17,8 @@ func seedCommand(args []string) error {
 	sub, args := args[0], args[1:]
 	fs := flag.NewFlagSet("seed "+sub, flag.ExitOnError)
 	dir := fs.String("dir", "seeds", "dataset directory")
+	book := fs.String("book", "", "sync: only this prayer book (its prayer_books row and its directory)")
+	apply := fs.Bool("apply", false, "sync: write the changes (default: report only)")
 	_ = fs.Parse(args)
 	url, err := databaseURL()
 	if err != nil {
@@ -33,6 +35,8 @@ func seedCommand(args []string) error {
 		return seed.Load(ctx, pool, *dir, logf)
 	case "export":
 		return seed.Export(ctx, pool, *dir)
+	case "sync":
+		return seedSync(ctx, pool, *dir, *book, *apply)
 	}
-	return fmt.Errorf("unknown seed command %q (load, export)", sub)
+	return fmt.Errorf("unknown seed command %q (load, sync, export)", sub)
 }

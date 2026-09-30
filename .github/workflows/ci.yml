@@ -50,10 +50,10 @@ jobs:
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y -qq postgresql-client-16
           echo /usr/lib/postgresql/16/bin >> "$GITHUB_PATH"
-      - name: migration tests
+      - name: migration and seed sync tests
         env:
           MIGRATE_TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
-        run: go test -count=1 ./internal/migrate/
+        run: go test -count=1 ./internal/migrate/ ./internal/seed/
       - name: schema snapshot matches the migrations
         env:
           PGPASSWORD: postgres

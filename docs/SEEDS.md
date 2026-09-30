@@ -13,7 +13,7 @@ formatos — portar cada fonte seria portar vinte importadores diferentes.
 ## A solução: um dataset canônico
 
 Em vez de portar as fontes, o resultado delas foi exportado **uma vez**:
-`rails db:seed` num banco vazio e `estevao-seed export` desse banco. O que sai é
+`rails db:seed` num banco vazio e `estevao seed export` desse banco. O que sai é
 `seeds/`, um único formato para todos os livros:
 
 ```
@@ -45,27 +45,111 @@ Regras do formato:
   valor final de cada sequência — por isso um banco semeado pelo Go tem **os
   mesmos ids** de um semeado pelo Rails.
 
-Um livro novo, ou uma correção de texto, é uma edição nesses arquivos. Para
-refazer tudo a partir das fontes Rails (depois de mudar os seeds Ruby):
-`tools/seed-export.sh` (~12 min).
+**`seeds/` é a fonte do conteúdo.** Um livro novo, uma correção de texto, uma
+coleta ou uma leitura é uma edição nesses arquivos, revisada em PR como
+qualquer código. Os seeds Ruby do Rails ficaram como histórico: o dataset foi
+exportado deles uma vez e não é mais regenerado a partir deles.
 
-## Carga
+## Banco novo: `estevao db prepare`
 
 ```bash
-psql "$DATABASE_URL" -f db/schema.sql     # banco vazio
-estevao-seed load                          # ~4 s (o db:seed do Rails leva ~12 min)
+estevao db prepare     # cria o banco, carrega db/schema.sql e seeds/ (~5 s)
 ```
 
-O loader roda numa transação e **recusa** um banco em que qualquer tabela de
-referência já tenha linhas. O `db:seed` do Rails apaga e recria os dados de
-referência; num banco com usuários isso é destrutivo (e parcial: `PrayerBook.
-destroy_all` falha em silêncio para livros com salmos), então o Go não
-reproduz esse modo.
+É o `rails db:prepare`. Num banco sem tabelas, ele carrega o schema e depois
+`estevao seed load`. Esse loader roda numa transação e **recusa** um banco em
+que qualquer tabela de referência já tenha linhas.
+
+O `db:seed` do Rails apagava e recriava os dados de referência. Num banco com
+usuários isso é destrutivo, e parcial: `PrayerBook.destroy_all` falha em
+silêncio para livros com salmos. O Go não tem esse modo.
+
+## Banco existente: `estevao seed sync`
+
+O `sync` substitui as tarefas incrementais do Rails:
+* `prayer_books:seed[código]` e `prayer_books:setup_dwdo`;
+* `liturgical_texts:sync_catalog`, `import:collects`, `psalters:seed`;
+* `background_music:seed`.
+
+```bash
+estevao seed sync                      # só relata o que mudaria
+estevao seed sync -book loc_2015       # só um livro (a linha em prayer_books e o seu diretório)
+estevao seed sync -apply               # escreve
+```
+
+Como compara:
+
+* **Linhas com identidade natural** são casadas por ela. Para cada tabela:
+
+  | Tabela | Identidade |
+  |---|---|
+  | `celebrations` | livro + `name` |
+  | `liturgical_texts` | livro + `slug` |
+  | `lectionary_readings` | livro + data + ciclo + ofício + tipo + variante + celebração |
+  | `psalms` | livro + `number` |
+  | `psalm_cycles` | livro + chave do ciclo |
+  | `preference_*` | livro + `key` |
+  | `bible_texts` | tradução + livro + capítulo + versículo |
+  | `prayer_books`, `bible_versions` | `code` |
+  | trilhas de música | `slug` |
+
+  Uma linha alterada é atualizada **no lugar**: o id se mantém, porque dados de
+  usuário e clientes podem guardá-lo. Uma linha nova é inserida.
+* **Coletas** não têm identidade: há alternativas para o mesmo dia. O grupo
+  (livro + celebração + estação + domingo + estilo de linguagem) é comparado
+  como lista ordenada e, se mudou, é substituído inteiro na ordem do dataset.
+  Nenhum dado de usuário aponta para coletas.
+* **Nunca apaga.** Linhas que só existem no banco são listadas e ficam. Há dados
+  de usuário que apontam para conteúdo, alguns com `ON DELETE CASCADE`
+  (`user_audio_usages` → `liturgical_texts`); remover conteúdo é uma migração
+  revisada.
+* **Colunas de processo não são sobrescritas** numa linha existente:
+  * o áudio legado de `liturgical_texts` (`audio_url`, `audio_urls`,
+    `audio_generation_status`);
+  * `published_at` e a duração medida de `background_tracks`.
+* **Fora do sync:**
+  * `feature_flags` e `background_track_assets` (estado de produção);
+  * os usuários de sistema, as regras de vida embutidas e as anotações de
+    exemplo, criados uma vez pelo `load`;
+  * as Bíblias completas (`estevao bible`).
+
+Tudo roda numa transação, com `lock_timeout` de 5 s. No fim, o `updated_at` de
+cada livro cujo conteúdo mudou é tocado. Isso invalida todos os caches versionados
+pelo livro: os do Redis e os em memória de cada instância. Os demais livros não
+são tocados.
+
+Antes de aplicar, o `sync` recusa um dataset inconsistente:
+* uma linha num diretório de livro que aponta para outro livro;
+* duas linhas com a mesma identidade;
+* um campo que não é coluna da tabela.
+
+### Primeiro uso em produção
+
+O `seeds/` saiu do `rails db:seed`, e a produção pode ter divergido dele por
+edições feitas por rake ou console ao longo do tempo. Antes do primeiro
+`-apply`:
+
+1. Rode `estevao seed sync` **sem `-apply`** contra produção. Só lê.
+2. Para cada diferença, decida qual lado está certo. Se for a produção, edite
+   `seeds/` para refletir o valor dela. Se for o dataset, deixe para o `-apply`.
+3. Repita até o relatório mostrar só o que deve mudar. Então aplique.
+
+Depois disso, conteúdo passa a seguir o mesmo caminho do código: PR → CI →
+deploy → `estevao seed sync -apply`. Esse passo pode entrar no
+`preDeployCommand`, depois do `estevao db prepare`, quando houver confiança no
+fluxo.
 
 ## Verificação
 
-`tools/seed-verify.sh` cria um banco vazio a partir de `db/schema.sql`, carrega
-`seeds/`, exporta de novo e compara com `seeds/` (diff vazio). Além disso,
+`tools/seed-verify.sh` cria um banco vazio com `estevao db prepare`, exporta de
+novo e compara com `seeds/` (diff vazio). O teste do `sync`
+(`internal/seed/sync_test.go`, no CI) carrega o dataset, exige zero diferenças,
+altera uma cópia (texto, celebração nova, coleta nova no grupo) e verifica:
+* o plano;
+* que o relatório sem `-apply` não escreve;
+* que o id se mantém e a coluna de processo não é tocada;
+* que o livro é tocado;
+* que uma segunda passada não encontra nada. Além disso,
 comparei tabela por tabela o banco semeado pelo Go com o semeado pelo Rails
 (`to_jsonb` de cada linha, ordenado por id, menos os timestamps, e o valor de
 cada sequência): **as 21 tabelas com dados são idênticas, ids incluídos**.

@@ -114,55 +114,9 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 						return err
 					}
 				}
-				out := map[string]json.RawMessage{"created_at": now, "updated_at": now}
-				for k, v := range row {
-					out[k] = v
-				}
-				for c, names := range t.enums {
-					var name string
-					if json.Unmarshal(row[c], &name) == nil {
-						n, ok := names[name]
-						if !ok {
-							return fmt.Errorf("%s: %s %q is not a %s", seg.File, c, name, t.name)
-						}
-						out[c] = marshal(n)
-					}
-				}
-				for _, c := range t.relative {
-					if v := scalar(row[c]); strings.HasPrefix(v, "@today") {
-						days := 0
-						if rest := strings.TrimPrefix(v, "@today"); rest != "" {
-							if _, err := fmt.Sscanf(rest, "%d", &days); err != nil {
-								return fmt.Errorf("%s: bad relative date %q", seg.File, v)
-							}
-						}
-						// Date.today: the loading machine's local day.
-						out[c] = marshal(time.Now().AddDate(0, 0, days).Format("2006-01-02"))
-					}
-				}
-				for _, r := range t.refs {
-					v, ok := row[r.field]
-					delete(out, r.field)
-					if !ok || string(v) == "null" {
-						out[r.column] = json.RawMessage("null")
-						continue
-					}
-					var key []string
-					if len(v) > 0 && v[0] == '[' {
-						if err := json.Unmarshal(v, &key); err != nil {
-							return err
-						}
-					} else {
-						key = []string{scalar(v)}
-					}
-					if r.scope != "" && len(key) < len(r.keys) {
-						key = append([]string{book}, key...)
-					}
-					id, ok := ids[r.table][strings.Join(key, "\x00")]
-					if !ok {
-						return fmt.Errorf("%s: %s %q not found", seg.File, r.field, key)
-					}
-					out[r.column] = marshal(id)
+				out, err := decodeRow(t, row, book, ids, now, seg.File)
+				if err != nil {
+					return err
 				}
 				batch = append(batch, out)
 				if len(batch) == insertBatch {
@@ -191,6 +145,63 @@ func Load(ctx context.Context, pool *pgxpool.Pool, dir string, logf func(string,
 		}
 	}
 	return tx.Commit(ctx)
+}
+
+// decodeRow turns a dataset row back into column values: natural keys to
+// ids (ids maps table -> joined natural key -> id), enum names to integers,
+// relative dates to dates; created_at and updated_at are now.
+func decodeRow(t *table, row map[string]json.RawMessage, book string, ids map[string]map[string]int64, now json.RawMessage, file string) (map[string]json.RawMessage, error) {
+	out := map[string]json.RawMessage{"created_at": now, "updated_at": now}
+	for k, v := range row {
+		out[k] = v
+	}
+	for c, names := range t.enums {
+		var name string
+		if json.Unmarshal(row[c], &name) == nil {
+			n, ok := names[name]
+			if !ok {
+				return nil, fmt.Errorf("%s: %s %q is not a %s", file, c, name, t.name)
+			}
+			out[c] = marshal(n)
+		}
+	}
+	for _, c := range t.relative {
+		if v := scalar(row[c]); strings.HasPrefix(v, "@today") {
+			days := 0
+			if rest := strings.TrimPrefix(v, "@today"); rest != "" {
+				if _, err := fmt.Sscanf(rest, "%d", &days); err != nil {
+					return nil, fmt.Errorf("%s: bad relative date %q", file, v)
+				}
+			}
+			// Date.today: the loading machine's local day.
+			out[c] = marshal(time.Now().AddDate(0, 0, days).Format("2006-01-02"))
+		}
+	}
+	for _, r := range t.refs {
+		v, ok := row[r.field]
+		delete(out, r.field)
+		if !ok || string(v) == "null" {
+			out[r.column] = json.RawMessage("null")
+			continue
+		}
+		var key []string
+		if len(v) > 0 && v[0] == '[' {
+			if err := json.Unmarshal(v, &key); err != nil {
+				return nil, err
+			}
+		} else {
+			key = []string{scalar(v)}
+		}
+		if r.scope != "" && len(key) < len(r.keys) {
+			key = append([]string{book}, key...)
+		}
+		id, ok := ids[r.table][strings.Join(key, "\x00")]
+		if !ok {
+			return nil, fmt.Errorf("%s: %s %q not found", file, r.field, key)
+		}
+		out[r.column] = marshal(id)
+	}
+	return out, nil
 }
 
 func insert(ctx context.Context, tx pgx.Tx, name string, cols []string, rows []map[string]json.RawMessage) error {

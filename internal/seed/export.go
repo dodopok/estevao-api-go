@@ -139,88 +139,26 @@ func Export(ctx context.Context, pool *pgxpool.Pool, dir string) error {
 				mt.Gaps = append(mt.Gaps, Gap{Row: rowNumber, Skip: id - expected})
 			}
 			expected = id + 1
-			natural := func(r *ref, fkID int64) ([]string, error) {
-				key, ok := indexes[r.table][fkID]
-				if !ok {
-					return nil, fmt.Errorf("%s.%s=%d: no %s row", t.name, r.column, fkID, r.table)
-				}
-				return key, nil
-			}
-			// the row's own natural key
 			if len(t.keys) > 0 {
-				var key []string
-				for _, k := range t.keys {
-					if r := refFor(t, k); r != nil {
-						fk, _ := idOf(row[k])
-						nk, err := natural(r, fk)
-						if err != nil {
-							return err
-						}
-						key = append(key, nk...)
-					} else {
-						key = append(key, scalar(row[k]))
-					}
-				}
-				index[id] = key
-			}
-			book := ""
-			var buf bytes.Buffer
-			buf.WriteByte('{')
-			first := true
-			write := func(field string, value []byte) {
-				if !first {
-					buf.WriteString(", ")
-				}
-				first = false
-				k := marshal(field)
-				buf.Write(k)
-				buf.WriteString(": ")
-				buf.Write(value)
-			}
-			if t.book == "prayer_book_id" {
-				if fk, ok := idOf(row["prayer_book_id"]); ok {
-					book = indexes["prayer_books"][fk][0]
-				}
-			}
-			for _, c := range cols {
-				if skipped[c] {
-					continue
-				}
-				r := refFor(t, c)
-				if r == nil {
-					if names, ok := t.enums[c]; ok {
-						write(c, enumName(names, row[c]))
-						continue
-					}
-					if containsString(t.relative, c) {
-						write(c, relativeDate(row[c], row["created_at"]))
-						continue
-					}
-					write(c, compact(row[c]))
-					continue
-				}
-				fk, ok := idOf(row[c])
-				if !ok {
-					write(r.field, []byte("null"))
-					continue
-				}
-				nk, err := natural(r, fk)
+				key, err := ownKey(t, row, indexes)
 				if err != nil {
 					return err
 				}
-				if t.book == c {
-					book = nk[0]
+				index[id] = key
+			}
+			book, fields, err := encodeRow(t, cols, row, indexes)
+			if err != nil {
+				return err
+			}
+			var buf bytes.Buffer
+			buf.WriteByte('{')
+			for i, f := range fields {
+				if i > 0 {
+					buf.WriteString(", ")
 				}
-				if r.scope != "" && len(nk) > 1 && nk[0] == book {
-					nk = nk[1:]
-				}
-				var v []byte
-				if len(nk) == 1 {
-					v = marshal(nk[0])
-				} else {
-					v = marshal(nk)
-				}
-				write(r.field, v)
+				buf.Write(marshal(f.name))
+				buf.WriteString(": ")
+				buf.Write(f.value)
 			}
 			buf.WriteByte('}')
 			file := t.name + ".json"
@@ -276,6 +214,87 @@ func Export(ctx context.Context, pool *pgxpool.Pool, dir string) error {
 	}
 	m, _ := json.MarshalIndent(manifest, "", "  ")
 	return os.WriteFile(filepath.Join(dir, "manifest.json"), append(m, '\n'), 0o644)
+}
+
+// field is one dataset field of a row, in column order.
+type field struct {
+	name  string
+	value []byte
+}
+
+func naturalOf(indexes map[string]keyIndex, t *table, r *ref, fkID int64) ([]string, error) {
+	key, ok := indexes[r.table][fkID]
+	if !ok {
+		return nil, fmt.Errorf("%s.%s=%d: no %s row", t.name, r.column, fkID, r.table)
+	}
+	return key, nil
+}
+
+// ownKey is a row's natural key, its foreign keys written as theirs.
+func ownKey(t *table, row map[string]json.RawMessage, indexes map[string]keyIndex) ([]string, error) {
+	var key []string
+	for _, k := range t.keys {
+		if r := refFor(t, k); r != nil {
+			fk, _ := idOf(row[k])
+			nk, err := naturalOf(indexes, t, r, fk)
+			if err != nil {
+				return nil, err
+			}
+			key = append(key, nk...)
+		} else {
+			key = append(key, scalar(row[k]))
+		}
+	}
+	return key, nil
+}
+
+// encodeRow writes a database row (to_jsonb) as its dataset fields: no id
+// or timestamps, foreign keys as natural keys, enums by name, relative
+// dates. book is the Prayer Book directory the row belongs in.
+func encodeRow(t *table, cols []string, row map[string]json.RawMessage, indexes map[string]keyIndex) (book string, fields []field, err error) {
+	if t.book == "prayer_book_id" {
+		if fk, ok := idOf(row["prayer_book_id"]); ok {
+			book = indexes["prayer_books"][fk][0]
+		}
+	}
+	for _, c := range cols {
+		if skipped[c] {
+			continue
+		}
+		r := refFor(t, c)
+		if r == nil {
+			switch {
+			case t.enums[c] != nil:
+				fields = append(fields, field{c, enumName(t.enums[c], row[c])})
+			case containsString(t.relative, c):
+				fields = append(fields, field{c, relativeDate(row[c], row["created_at"])})
+			default:
+				fields = append(fields, field{c, compact(row[c])})
+			}
+			continue
+		}
+		fk, ok := idOf(row[c])
+		if !ok {
+			fields = append(fields, field{r.field, []byte("null")})
+			continue
+		}
+		nk, err := naturalOf(indexes, t, r, fk)
+		if err != nil {
+			return "", nil, err
+		}
+		if t.book == c {
+			book = nk[0]
+		}
+		if r.scope != "" && len(nk) > 1 && nk[0] == book {
+			nk = nk[1:]
+		}
+		if len(nk) == 1 {
+			fields = append(fields, field{r.field, marshal(nk[0])})
+		} else {
+			fields = append(fields, field{r.field, marshal(nk)})
+		}
+	}
+	return book, fields, nil
 }
 
 // compact normalizes a JSON value to one line (jsonb text already is,

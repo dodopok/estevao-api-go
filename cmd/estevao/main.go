@@ -9,7 +9,7 @@
 //	estevao db rollback [-steps N]
 //	estevao db new <name>     create db/migrations/<version>_<name>.sql
 //	estevao db dump           rewrite db/schema.sql from DATABASE_URL (needs pg_dump)
-//	estevao seed load|export ...
+//	estevao seed load|sync|export ...
 package main
 
 import (
@@ -49,6 +49,8 @@ func usage() {
   db new NAME [-dir db/migrations]     create a migration file
   db dump [-o db/schema.sql]           rewrite the schema snapshot (needs pg_dump)
   seed load [-dir seeds]               fill the reference tables of an empty database
+  seed sync [-dir seeds] [-book CODE] [-apply]
+                                       reconcile a live database with seeds/ (report only without -apply)
   seed export [-dir seeds]             write seeds/ from DATABASE_URL
 
 DATABASE_URL selects the database.`)
