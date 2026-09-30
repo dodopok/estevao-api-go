@@ -1,6 +1,6 @@
--- Schema of the Rails application's database (db/schema.rb), dumped by
--- tools/schema-dump.sh. The Rails migrations own the schema; this snapshot
--- only creates new local databases for the Go server, its tests and its seeder.
+-- Schema of the Estêvão database after every migration, written by
+-- `estevao db dump`. Never edit by hand: add a migration (`estevao db new`),
+-- apply it to a local database and dump again.
 
 --
 -- PostgreSQL database dump

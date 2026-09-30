@@ -1,32 +1,93 @@
-# Estratégia de banco de dados (não destrutiva)
+# Banco de dados
 
-**Resumo:** o Go usa o banco de produção como ele está. Não há migração de
-dados, não há DDL executado pelo Go, e Rails e Go podem rodar ao mesmo tempo
-contra o mesmo banco. Voltar ao Rails é trocar o processo; os dados continuam
-válidos para os dois.
+**Resumo:** o Go usa o banco de produção como ele está e passa a ser o dono do
+schema (`estevao db`). O histórico de migrações continua na mesma tabela, e
+nenhum dado é convertido. Enquanto o Rails existir, os dois podem rodar contra o
+mesmo banco, e voltar ao Rails é trocar o processo; a partir da primeira
+migração do Go, esse retorno depende de a migração ser compatível com o código
+Rails (seção 1, regras).
 
-## 1. Mesmo schema, mesmo dono
+## 1. Schema e migrações
 
-* O Go lê e escreve **as mesmas tabelas, colunas e sequências** que o Active
-  Record, no mesmo formato: `jsonb` com o mesmo shape, enums como os inteiros do
-  Rails, timestamps sem fuso em UTC com microssegundos, `updated_at` alterado só
-  quando o Active Record alteraria, os mesmos `touch`, contadores e remoções em
-  cascata (`dependent:`).
-* **As migrações continuam sendo do Rails.** O Go não executa `CREATE`/`ALTER`/
-  `DROP` em nenhum momento, e não precisa de nenhuma migração nova: todo o port
-  foi feito contra o schema atual (`db/schema.rb`, 131 migrações).
-* `db/schema.sql` é só uma fotografia desse schema (gerada por
-  `tools/schema-dump.sh` a partir de um `db:schema:load` do Rails), usada para
-  criar bancos **novos e locais** (desenvolvimento, CI, seed). Ela inclui as
-  versões em `schema_migrations`, então um banco criado por ela é reconhecido
-  pelo Rails como atualizado.
-* Enquanto o Rails existir, qualquer mudança de schema entra como migração Rails
-  e é aplicada pelo `db:prepare` do deploy Rails (ou pelo `preDeployCommand`
-  atual); depois, `tools/schema-dump.sh` atualiza `db/schema.sql`. Depois de
-  desligar o Rails em definitivo, a recomendação é adotar uma ferramenta de
-  migração em Go (ex.: `golang-migrate`) partindo de `db/schema.sql` como linha de
-  base e mantendo `schema_migrations` — nunca reaplicar o schema em cima de um
-  banco existente.
+O Go é o dono do schema. O banco de produção continua o mesmo: nenhuma tabela é
+recriada, nenhum dado é convertido.
+
+* **Mesmo formato do Active Record.** O Go lê e escreve as mesmas tabelas,
+  colunas e sequências:
+  * `jsonb` com o mesmo shape e enums como os inteiros do Rails;
+  * timestamps sem fuso, em UTC, com microssegundos;
+  * `updated_at` alterado só quando o Active Record alteraria;
+  * os mesmos `touch`, contadores e remoções em cascata (`dependent:`).
+* **Um só histórico.** As migrações ficam em `db/migrations/*.sql` e são
+  registradas na mesma tabela `schema_migrations` que o Rails criou, com versões
+  no mesmo formato (`AAAAMMDDhhmmss`). O banco de produção mantém as 131 versões
+  do Rails, até `20260922160000` (a *baseline*), e as do Go vêm depois.
+* **Um migrador por vez.** O migrador usa o mesmo *advisory lock* do
+  `ActiveRecord::Migrator` (`2053462845 * crc32(current_database)`). Um migrador
+  Go e um Rails nunca rodam ao mesmo tempo no mesmo banco: o segundo falha, como
+  o `ConcurrentMigrationError` do Rails.
+* **`db/schema.sql`** é o schema completo depois de todas as migrações, com as
+  versões aplicadas (o equivalente do `schema.rb`). Ele vai embutido no binário:
+  cada build carrega exatamente o schema contra o qual foi compilado.
+
+### Comandos (`estevao db`)
+
+| Comando | O que faz |
+|---|---|
+| `prepare` | Equivalente ao `rails db:prepare`, e é o que o deploy roda. Cria o banco se não existir. Num banco sem tabelas, carrega `schema.sql` e o `seeds/`. Num banco existente, aplica as migrações pendentes. Recusa um banco com tabelas mas sem a baseline |
+| `migrate` | Aplica as pendentes, cada uma numa transação junto com a sua linha em `schema_migrations`. Uma falha para ali e não deixa rastro |
+| `status` | Lista as migrações do Go (aplicada/pendente) e conta o histórico Rails |
+| `rollback [-steps N]` | Reverte as últimas N migrações do Go pela seção `down`. As do Rails e as sem `down` são irreversíveis |
+| `new <nome>` | Cria `db/migrations/<versão>_<nome>.sql` |
+| `dump` | Reescreve `db/schema.sql` a partir do banco local. Precisa do `pg_dump` 16; é ferramenta de desenvolvimento |
+
+### Criar uma migração
+
+```bash
+estevao db new add_nickname_to_users      # editar as seções up/down
+estevao db migrate                         # banco local (DATABASE_URL)
+estevao db dump                            # atualiza db/schema.sql
+tools/schema-check.sh                      # o mesmo teste do CI
+```
+
+O formato é o do [dbmate](https://github.com/amacneil/dbmate), que usa uma
+tabela `schema_migrations(version varchar)` compatível. O dbmate serve de
+ferramenta de emergência sobre os mesmos arquivos.
+
+```sql
+-- migrate:up
+ALTER TABLE users ADD COLUMN nickname varchar;
+
+-- migrate:down
+ALTER TABLE users DROP COLUMN nickname;
+```
+
+### Regras para migrar produção sem parar o serviço
+
+Durante o deploy, a versão anterior continua servindo enquanto a migração roda.
+Toda migração precisa funcionar com as duas versões do código (*expand/contract*):
+
+* **Adicionar** coluna (nula ou com default), tabela ou índice é seguro. O Go
+  lista as colunas que lê, então uma coluna nova não quebra a versão anterior.
+* **Renomear ou remover** coluna leva dois deploys: primeiro o código para de
+  usá-la, depois uma migração a remove.
+* **Índices** em tabelas grandes: `CREATE INDEX CONCURRENTLY` numa migração
+  própria com `-- migrate:up transaction:false`, com um único comando.
+* **Tempo de espera:** cada migração roda com `lock_timeout` de 5 s
+  (`MIGRATION_LOCK_TIMEOUT`) e sem `statement_timeout`. Uma migração presa
+  atrás de uma query longa falha, e o deploy para, em vez de enfileirar todas as
+  requisições atrás dela.
+* **Dados:** mudar dados de referência (textos, coletas, leituras) não é
+  migração, é `estevao seed sync` ([SEEDS.md](SEEDS.md)). Migração de dados de
+  usuário é SQL na migração, em lotes quando a tabela for grande.
+
+### O CI verifica
+
+* os testes do migrador contra bancos descartáveis;
+* que `db/schema.sql` é exatamente o schema que as migrações produzem
+  (`tools/schema-check.sh`: uma migração commitada sem `estevao db dump`
+  aparece como diferença);
+* que o seeder reconstrói `seeds/` (`tools/seed-verify.sh`).
 
 ## 2. Estado compartilhado fora das tabelas de domínio
 

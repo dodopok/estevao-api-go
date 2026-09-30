@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Go server, worker and seeder in one image (the same image serves the web and
+# Go server, worker and operations tool in one image (the same image serves the web and
 # the worker service, as the Rails image does). tzdata is required: user time
 # zones and the country inferred from a zone are read from /usr/share/zoneinfo.
 
@@ -9,9 +9,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
+COPY db ./db
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/estevao-api ./cmd/estevao-api && \
     CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/estevao-worker ./cmd/estevao-worker && \
-    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/estevao-seed ./cmd/estevao-seed
+    CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/estevao ./cmd/estevao
 
 FROM debian:bookworm-slim
 RUN apt-get update -qq && \
@@ -21,7 +22,6 @@ RUN apt-get update -qq && \
 WORKDIR /app
 COPY --from=build /out/ /usr/local/bin/
 COPY public ./public
-COPY db/schema.sql ./db/schema.sql
 COPY seeds ./seeds
 ENV RAILS_ENV=production PORT=3000 PUBLIC_DIR=/app/public
 USER app
